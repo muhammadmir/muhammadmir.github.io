@@ -51,19 +51,18 @@ function format(course) {
 
 $(document).ready(function () {
     var table = $('#courses').DataTable({
+        dom: 'Pfrtip',
+        paging: false,
+        scrollY: 600,
+        scrollCollapse: true,
         ajax: {
             url: "table.json",
             dataSrc: ""
         },
-        dom: 'Pfrtip',
         searchPanes: {
             cascadePanes: true,
             combiner: 'and'
         },
-        "scrollY": 500,
-        deferRender: true,
-        "scroller": true,
-        scrollCollapse: true,
         columnDefs: [
             {
                 visible: false,
@@ -116,13 +115,13 @@ $(document).ready(function () {
                         {
                             label: 'Available',
                             value: function (rowData, rowIdx) {
-                                return rowData.Registered < rowData.Remaining
+                                return rowData.Remaining > 0
                             }
                         },
                         {
                             label: 'Full',
                             value: function (rowData, rowIdx) {
-                                return rowData.Registered >= rowData.Remaining
+                                return rowData.Remaining <= 0
                             }
                         },
                         {
