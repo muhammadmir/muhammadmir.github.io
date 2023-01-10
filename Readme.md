@@ -1,4 +1,6 @@
-# Test
+# Homepage
 
-## Test
+## Navigation
+
+1. [Treehouse Courses](https://muhammadmir.github.io/courses)
 
