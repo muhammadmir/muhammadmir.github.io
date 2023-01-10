@@ -53,8 +53,8 @@ $(document).ready(function () {
     var table = $('#courses').DataTable({
         dom: 'Pfrtip',
         paging: false,
-        scrollY: 600,
         scrollCollapse: true,
+        scrollY: 600,
         ajax: {
             url: "table.json",
             dataSrc: ""
