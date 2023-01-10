@@ -57,8 +57,13 @@ $(document).ready(function () {
         },
         dom: 'Pfrtip',
         searchPanes: {
-            cascadePanes: true
+            cascadePanes: true,
+            combiner: 'and'
         },
+        scrollY: 500,
+        deferRender: true,
+        scroller: true,
+        scrollCollapse: true,
         columnDefs: [
             {
                 visible: false,
