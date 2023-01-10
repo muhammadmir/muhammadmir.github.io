@@ -2,5 +2,5 @@
 
 ## Navigation
 
-1. [Treehouse Courses](https://muhammadmir.github.io/courses)
+1. [Treehouse Courses](https://muhammadmir.github.io/Courses/)
 
