@@ -60,9 +60,9 @@ $(document).ready(function () {
             cascadePanes: true,
             combiner: 'and'
         },
-        scrollY: 500,
+        "scrollY": 500,
         deferRender: true,
-        scroller: true,
+        "scroller": true,
         scrollCollapse: true,
         columnDefs: [
             {
