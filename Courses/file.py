@@ -3,8 +3,14 @@ from httpx import Client
 from urllib3 import disable_warnings
 from re import findall
 from json import dumps, loads
-
+from typing import Optional
+from flask import Flask
+from flask_caching import Cache
 disable_warnings()
+
+app = Flask(__name__)
+app.config['CACHE_TYPE'] = 'SimpleCache'
+cache = Cache(app)
 
 # https://drew.edu/registrars-office/about-us/facultystaff/course-attribute-overview/
 SUBJECT_MAPPING = {
@@ -106,7 +112,7 @@ ALL = {
 }
 
 class Schedules():
-    def __init__(self, username: str, password: str) -> None:
+    def __init__(self, username: Optional[str] = None, password: Optional[str] = None) -> None:
         self.username = username
         self.password = password
         self.valid = False
@@ -294,7 +300,7 @@ class Schedules():
 
         return final_attributes
     
-    def get_source(self):
+    def get_courses(self) -> list[dict]:
         with Client(base_url='https://selfservice.drew.edu', verify=False, timeout=30) as session:
             try:
                 first_headers = {
@@ -399,10 +405,16 @@ class Schedules():
                                                 courses.append(course)
 
                                         except StopIteration: break
+                                    return courses
                                     with open('table.json', 'w', encoding='UTF-8') as f: f.write(dumps(courses, indent=4))
                             except Exception as e: print(e)
                     except Exception as e: print(e)
             except Exception as e: print(e)
 
-a = Schedules('mmir', 'nyjmer-kahpu8-nakpiM')
-a.get_source() #Modify to include ALL courses and include another separator for undergrad and grad courses
+@app.route('/get_courses', methods=['GET'])
+@cache.cached(timeout=100)
+def handle_request():
+    return schedule.get_courses()
+
+schedule = Schedules()
+app.run(debug=True)
