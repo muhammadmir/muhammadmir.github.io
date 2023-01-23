@@ -56,7 +56,7 @@ $(document).ready(function () {
         scrollCollapse: true,
         scrollY: 600,
         ajax: {
-            url: "https://treehouse-courses.muhammadmir1.repl.co/get_courses",
+            url: "table.json",
             dataSrc: ""
         },
         searchPanes: {
