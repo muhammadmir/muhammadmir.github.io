@@ -4,13 +4,8 @@ from urllib3 import disable_warnings
 from re import findall
 from json import dumps, loads
 from typing import Optional
-from flask import Flask
-from flask_caching import Cache
 disable_warnings()
 
-app = Flask(__name__)
-app.config['CACHE_TYPE'] = 'SimpleCache'
-cache = Cache(app)
 
 # https://drew.edu/registrars-office/about-us/facultystaff/course-attribute-overview/
 SUBJECT_MAPPING = {
@@ -411,10 +406,7 @@ class Schedules():
                     except Exception as e: print(e)
             except Exception as e: print(e)
 
-@app.route('/get_courses', methods=['GET'])
-@cache.cached(timeout=100)
-def handle_request():
-    return schedule.get_courses()
-
 schedule = Schedules()
-app.run(debug=True)
+courses = schedule.get_courses()
+
+with open('table.json', 'w', encoding='UTF-8') as f: f.write(dumps(courses, indent=4))
