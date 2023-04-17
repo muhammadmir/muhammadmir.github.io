@@ -7,11 +7,13 @@ from json import dumps, loads
 from typing import Optional
 from flask import Flask
 from flask_caching import Cache
+from flask_cors import CORS
 disable_warnings()
 
 app = Flask(__name__)
 app.config['CACHE_TYPE'] = 'SimpleCache'
 cache = Cache(app)
+CORS(app)
 
 # https://drew.edu/registrars-office/about-us/facultystaff/course-attribute-overview/
 with open('mappings.json', 'r', encoding='UTF-8') as f: SUBJECT_MAPPING = loads(f.read())
