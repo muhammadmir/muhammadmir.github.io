@@ -54,8 +54,6 @@ $(document).ready(function () {
         ajax: {
             url: "https://snowalienatedarchives.muhammadmir1.repl.co/get_courses",
             dataSrc: function(data) {
-                console.log(data[0].Courses[207])
-                console.log(data[0].Courses[208])
                 return data[0].Courses
             }
         },
