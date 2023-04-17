@@ -362,7 +362,7 @@ class Schedules():
                                 except Exception as e: print('Getting Courses', e, calander)
                         except Exception as e: print('Getting Course Search Options', e, calander)
                     return calanders
-                    # with open('table.json', 'w', encoding='UTF-8') as f: f.write(dumps(calanders, indent=4))
+                    # with open('./table.json', 'w', encoding='UTF-8') as f: f.write(dumps(calanders, indent=4))
             except Exception as e: print(e)
 
 @app.route('/get_courses', methods=['GET'])
