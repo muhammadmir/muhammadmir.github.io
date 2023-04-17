@@ -53,7 +53,7 @@ $(document).ready(function () {
     var table = $('#courses').DataTable({
         ajax: {
             url: "https://snowalienatedarchives.muhammadmir1.repl.co/get_courses",
-            dataSrc: ""
+            dataSrc: [0].Courses
         },
         dom: 'Pfrtip',
         searchPanes: {
