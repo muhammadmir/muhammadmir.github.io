@@ -51,17 +51,13 @@ function format(course) {
 
 $(document).ready(function () {
     var table = $('#courses').DataTable({
-        dom: 'Pfrtip',
-        paging: false,
-        scrollCollapse: true,
-        scrollY: 600,
         ajax: {
-            url: "table.json",
+            url: "https://snowalienatedarchives.muhammadmir1.repl.co/get_courses",
             dataSrc: ""
         },
+        dom: 'Pfrtip',
         searchPanes: {
-            cascadePanes: true,
-            combiner: 'and'
+            cascadePanes: true
         },
         columnDefs: [
             {
@@ -115,13 +111,13 @@ $(document).ready(function () {
                         {
                             label: 'Available',
                             value: function (rowData, rowIdx) {
-                                return rowData.Remaining > 0
+                                return rowData.Registered < rowData.Remaining
                             }
                         },
                         {
                             label: 'Full',
                             value: function (rowData, rowIdx) {
-                                return rowData.Remaining <= 0
+                                return rowData.Registered >= rowData.Remaining
                             }
                         },
                         {

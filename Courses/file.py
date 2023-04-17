@@ -2,98 +2,19 @@ from bs4 import BeautifulSoup
 from httpx import Client
 from urllib3 import disable_warnings
 from re import findall
+from time import time
 from json import dumps, loads
 from typing import Optional
+from flask import Flask
+from flask_caching import Cache
 disable_warnings()
 
+app = Flask(__name__)
+app.config['CACHE_TYPE'] = 'SimpleCache'
+cache = Cache(app)
 
 # https://drew.edu/registrars-office/about-us/facultystaff/course-attribute-overview/
-SUBJECT_MAPPING = {
-    'EAP': 'Academic English',
-    'AMST': 'American Studies',
-    'ANTH': 'Anthropology',
-    'ARBC': 'Arabic Language',
-    'ART': 'Art',
-    'ARTH': 'Art History',
-    'ARFA': 'Arts & Letters Fine Arts/Media',
-    'AREL': 'Arts & Letters Literature',
-    'ARSP': 'Arts & Letters Spirituality',
-    'ARWR': 'Arts & Letters Writing',
-    'ARLT': 'Arts and Letters',
-    'ARTT': 'Arts and Teaching',
-    'BBCL': 'Bible and Cultures',
-    'BCHM': 'Biochemistry',
-    'BIOL': 'Biology',
-    'BST': 'Business',
-    'CHEM': 'Chemistry',
-    'CHIN': 'Chinese',
-    'CE': 'Civic Engagement',
-    'CLAS': 'Classics',
-    'CRW': 'Comm, Research, Writing',
-    'CSCI': 'Computer Science',
-    'CRES': 'Conflict Resolution',
-    'DANC': 'Dance',
-    'DATA': 'Data Sciences',
-    'DMIN': 'Doctor of Ministry',
-    'ECON': 'Economics',
-    'EDUC': 'Education',
-    'EOS': 'Educational Opportunity Prog',
-    'ENGH': 'English',
-    'ENV': 'Environmental Science',
-    'ESS': 'Environmental Stud and Sustain',
-    'ETH': 'Ethics',
-    'FILM': 'Film',
-    'FIN': 'Finance',
-    'FREN': 'French',
-    'GERM': 'German',
-    'GDR': 'Graduate Division of Religion',
-    'HIST': 'History',
-    'HOST': 'Holocaust Studies',
-    'HON': 'Honors',
-    'HUM': 'Humanities',
-    'INTD': 'Interdisciplinary',
-    'INTF': 'Interfaith Studies',
-    'INTC': 'Internship-CLA',
-    'ITAL': 'Italian',
-    'LAT': 'Latin',
-    'DREW': 'Launch',
-    'LING': 'Linguistics',
-    'MATH': 'Mathematics',
-    'MCOM': 'Media & Communications',
-    'MDHM': 'Medical Humanities',
-    'MUS': 'Music',
-    'NEUR': 'Neuroscience',
-    'PAST': 'Pan-African Studies',
-    'PCC': 'Pastoral Care Counseling',
-    'PHIL': 'Philosophy',
-    'PE': 'Physical Education',
-    'PHYS': 'Physics',
-    'PSCI': 'Political Science',
-    'PRTH': 'Practical Theology',
-    'PREA': 'Preaching',
-    'PSYC': 'Psychology',
-    'PH': 'Public Health',
-    'REL': 'Religion',
-    'RLSC': 'Religion and Society',
-    'REDU': 'Religious Education',
-    'RUSS': 'Russian',
-    'SOC': 'Sociology',
-    'SPAN': 'Spanish',
-    'SPCH': 'Speech',
-    'STAT': 'Statistics',
-    'TMUS': 'TS - Music',
-    'THST': 'TS-HIST',
-    'THEA': 'Theatre Arts',
-    'TPHL': 'Theo. & Philosophical Stds',
-    'THEO': 'Theology',
-    'TREC': 'Travel Course',
-    'UNIV': 'University',
-    'VOCF': 'Vocation and Formation',
-    'WESM': 'Wesleyan/Methodist Studies',
-    'WGST': 'Women\'s and Gender Studies',
-    'WOR': 'Worship and Liturgy',
-    'WRTG': 'Writing'
-}
+with open('mappings.json', 'r', encoding='UTF-8') as f: SUBJECT_MAPPING = loads(f.read())
 ALL = {
     'Subjects': [],
     'Abbreviations': [],
@@ -111,8 +32,8 @@ class Schedules():
         self.username = username
         self.password = password
         self.valid = False
-        
-    def _authenticate(self):
+    
+    def _authenticate(self) -> None:
         with Client(follow_redirects=True, verify=False, timeout=30) as session:
             try:
                 first_headers = {
@@ -173,7 +94,7 @@ class Schedules():
                     except Exception as e: raise Exception(f"Error: {e}")
             except Exception as e: raise Exception(f"Error: {e}")
     
-    def _get_desc(self, session: Client, headers: dict, uri: str):
+    def _get_desc(self, session: Client, headers: dict, uri: str) -> list[dict]:
         try:
             a = session.get('https://selfservice.drew.edu/' + uri, headers=headers)
             if '>Catalog Entries<' in a.text:
@@ -183,7 +104,7 @@ class Schedules():
                 return findall(r'(?<=class="ntdefault"\>)(.*?)(?=\<)', str(selection).replace('\n', ''))[0].strip()
         except Exception as e: print(e)
     
-    def _get_numbers(self, session: Client, headers: dict, uri: str):
+    def _get_numbers(self, session: Client, headers: dict, uri: str) -> list[dict]:
         try:
             a = session.get('https://selfservice.drew.edu/' + uri, headers=headers)
             if '>Detailed Class Information<' in a.text:
@@ -197,7 +118,7 @@ class Schedules():
                 return int(seats[0].text), int(seats[1].text), int(seats[2].text), int(waitlisted[1].text)              
         except Exception as e: print(e)
     
-    def _format_subject(self, abbreviation: str):
+    def _format_subject(self, abbreviation: str) -> list[dict]:
         abbreviation = SUBJECT_MAPPING[abbreviation]
         
         try: subject_dict = next(item for item in ALL['Subjects'] if item["Name"] == abbreviation)
@@ -207,7 +128,7 @@ class Schedules():
         
         return subject_dict
     
-    def _format_abbreviation(self, abbreviation: str):
+    def _format_abbreviation(self, abbreviation: str) -> list[dict]:
         try: abbreviation_dict = next(item for item in ALL['Abbreviations'] if item["Name"] == abbreviation)
         except Exception as e:
             abbreviation_dict = {'ID': len(ALL['Abbreviations']) + 1, 'Name': abbreviation}
@@ -215,7 +136,7 @@ class Schedules():
         
         return abbreviation_dict
     
-    def _format_type(self, class_type: str):
+    def _format_type(self, class_type: str) -> list[dict]:
         try: class_type_dict = next(item for item in ALL['Types'] if item["Name"] == class_type)
         except Exception as e:
             class_type_dict = {'ID': len(ALL['Types']) + 1, 'Name': class_type}
@@ -223,7 +144,7 @@ class Schedules():
             
         return class_type_dict
         
-    def _format_location(self, location: str):
+    def _format_location(self, location: str) -> list[dict]:
         try: location_dict = next(item for item in ALL['Locations'] if item["Name"] == location)
         except Exception as e:
             location_dict = {'ID': len(ALL['Locations']) + 1, 'Name': location}
@@ -231,7 +152,7 @@ class Schedules():
             
         return location_dict
     
-    def _format_nature(self, nature: str):
+    def _format_nature(self, nature: str) -> list[dict]:
         try: nature_dict = next(item for item in ALL['Natures'] if item["Name"] == nature)
         except Exception as e:
             nature_dict = {'ID': len(ALL['Natures']) + 1, 'Name': nature}
@@ -239,7 +160,7 @@ class Schedules():
             
         return nature_dict
     
-    def _format_time(self, t: str):
+    def _format_time(self, t: str) -> list[dict]:
         try: t = t.upper().replace(' - ', ' - ')
         except Exception as e: t = 'TBA'
 
@@ -250,7 +171,7 @@ class Schedules():
 
         return time_dict
     
-    def _format_day(self, days: str):
+    def _format_day(self, days: str) -> list[dict]:
         final_days = []
         for day in days:
 
@@ -268,7 +189,7 @@ class Schedules():
 
         return final_days
     
-    def _convert_instructors(self, instructors: str):
+    def _convert_instructors(self, instructors: str) -> list[dict]:
         try: temp_instructors = " ".join(instructors.replace(' (P)', '').split()).split(', ')
         except Exception as e: temp_instructors = ['TBA']
 
@@ -283,19 +204,99 @@ class Schedules():
  
         return final_instructors
 
-    def _convert_attributes(self, attributes: list): 
+    def _convert_attributes(self, attributes: list) -> list[dict]:
         final_attributes = []
-
+        
         for attr in attributes:
             try: attr_dict = next(item for item in ALL['Attributes'] if item["Name"] == attr)
             except Exception as e:
                 attr_dict = {'ID': len(ALL['Attributes']) + 1, 'Name': attr}
                 ALL['Attributes'].append(attr_dict)
             final_attributes.append(attr_dict)
-
+            
         return final_attributes
     
-    def get_courses(self) -> list[dict]:
+    def _update_mappings(self, mappings: dict) -> None:
+        global SUBJECT_MAPPING
+        update = False
+        
+        for key, value in mappings.items():
+            if key not in SUBJECT_MAPPING:
+                update = True
+                SUBJECT_MAPPING[key] = value
+                print(f'Added {key} --> {value}')
+        
+        if update:
+            SUBJECT_MAPPING = dict(sorted(SUBJECT_MAPPING.items(), key=lambda x:x[1]))
+            with open('mappings.json', 'w', encoding='UTF-8') as f: f.write(dumps(SUBJECT_MAPPING, indent=4))
+     
+    def _parse_courses(self, rows: list, session: Client, second_headers: dict) -> list[dict]:
+        rows = iter(rows)
+        
+        courses = []
+        course = {}
+
+        while True:
+            try:
+                row = next(rows)
+                if row.find('th') and row.find('th')['class'][0] == 'ddtitle':
+                    item = row.text.strip().split(' - ')
+                    while len(item) != 4: # Instance when Course Name has ' - '
+                        item[0] = item[0] + ' - ' + item[1]
+                        del item[1]
+                                                
+                    course = {
+                        'CRN': item[1],
+                        'Section': item[3],
+                        'Subject': self._format_subject(item[2].split(' ')[0]),
+                        'Abbreviation': self._format_abbreviation(item[2].split(' ')[0]),
+                        'Level': item[2].split(' ')[1],
+                        'Name': item[0],
+                        'Description': None,
+                        'Credits': None,
+                        'Capacity': None,
+                        'Registered': None,
+                        'Remaining': None,
+                        'Waitlisted': None,
+                        'Attributes': [],
+                        'Properties': []
+                        }
+
+                    course['Capacity'], course['Registered'], course['Remaining'], course['Waitlisted'] = self._get_numbers(session, second_headers, row.find('a')['href'])
+                    row = next(rows)
+                    
+                    course['Description'] = self._get_desc(session, second_headers, row.find('a')['href'])
+                    course['Credits'] = findall(r'\d\.\d\d\d.*(?= )', row.text)[0].replace(' TO        ', ' - ')
+                    course['Attributes'] = self._convert_attributes(findall(r'(?<=Attributes\: )(.*?)(?= \n)', row.text)[0].split(', ') if 'Attributes' in row.text else [])
+
+                    rendezvous = row.find_all('tr')
+                    
+                    if len(rendezvous) != 0: # Handle if no meeting times have been created yet.
+                        del rendezvous[0] # Contains column headers
+                        
+                        for rende in rendezvous:
+                            sub_rows = rende.find_all('td')
+                            if len(sub_rows) < 6: continue
+                            
+                            course['Properties'].append({ # Courses can have multiple meeting locations/times
+                            'Type': self._format_type(sub_rows[0].text),
+                            'Time': self._format_time(sub_rows[1].text),
+                            'Days': self._format_day(sub_rows[2].text),
+                            'Location': self._format_location(sub_rows[3].text),
+                            'Period': sub_rows[4].text, #Presumed to be the same for every course.
+                            'Nature': self._format_nature(sub_rows[5].text),
+                            'Instructors': self._convert_instructors(sub_rows[6].text.strip())
+                            })
+                    courses.append(course)
+            except StopIteration: break
+            except Exception as e:
+                print(e, 'Parsing Course')
+                print(row)
+                print(course)
+                quit(0)
+        return courses
+
+    def get_courses(self, all_calanders: bool = False) -> list[dict]:
         with Client(base_url='https://selfservice.drew.edu', verify=False, timeout=30) as session:
             try:
                 first_headers = {
@@ -307,106 +308,67 @@ class Schedules():
                 first_response = session.get('/prod/bwckschd.p_disp_dyn_sched', headers=first_headers)
                 if '>Dynamic Schedule<' in first_response.text:
                     calanders = []
-                    cal_ids = findall(r'(?<=OPTION VALUE=")(.*?)(?=")', first_response.text)
+                    cal_ids = findall(r'(?<=OPTION VALUE=")(\d\d.*?)(?=")', first_response.text)
                     cal_names = findall(r'(?<=\d\d"\>)(.*?)(?=\<)', first_response.text)
-                    for cal_id, cal_name in zip(cal_ids, cal_names): calanders.append({'ID': str(len(calanders)), 'Calander ID': cal_id, 'Calander Name': cal_name.replace(' (View only)', '')})
-                    
-                    try:
-                        second_headers = {
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                            'Origin': 'https://selfservice.drew.edu',
-                            'Accept-Encoding': 'gzip, deflate, br',
-                            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.1 Safari/605.1.15',
-                            'Referer': 'https://selfservice.drew.edu/prod/bwckschd.p_disp_dyn_sched',
-                            'Accept-Language': 'en-US,en;q=0.9'
-                            }
-                        second_data = {'p_calling_proc': 'bwckschd.p_disp_dyn_sched', 'p_term': '202330', 'p_by_date': 'Y', 'p_from_date': '', 'p_to_date': ''}
+                    for cal_id, cal_name in zip(cal_ids, cal_names): calanders.append({'Calander ID': cal_id, 'Calander Name': cal_name.replace(' (View only)', '')})
 
-                        second_response = session.post('/prod/bwckgens.p_proc_term_date', headers=second_headers, data=second_data)
-                        if '>Class Schedule Search</' in second_response.text:
-                            source = second_response.text.strip().replace('\n', '')
-                            predefined = { #Won't neecessarily use, will parse categories while parsing the courses
-                                'Subjects': findall(r'(?<="\>)(.*?)(?=\<)', findall(r'(?<=MULTIPLE ID\="subj_id"\>)(.*?)(?=\</TD)', source)[0]),
-                                'Natures': findall(r'(?<="\>)(.*?)(?=\<)', findall(r'(?<=MULTIPLE ID\="schd_id"\>)(.*?)(?=\</TD)', source)[0]), #Seminar, Lab, Independent Study, etc.
-                                'Levels': findall(r'(?<="\>)(.*?)(?=\<)', findall(r'(?<=MULTIPLE ID\="levl_id"\>)(.*?)(?=\</TD)', source)[0]), #Grad, Undergrad, Masters, etc.
-                                'Lengths': findall(r'(?<="\>)(.*?)(?=\<)', findall(r'(?<=MULTIPLE ID\="ptrm_id"\>)(.*?)(?=\</TD)', source)[0]), #1st Half, 2nd Half, Full Term
-                                'Instructors': findall(r'(?<="\>)(.*?)(?=\<)', findall(r'(?<=MULTIPLE ID\="instr_id"\>)(.*?)(?=\</TD)', source)[0]),
-                                'Types': findall(r'(?<="\>)(.*?)(?=\<)', findall(r'(?<=MULTIPLE ID\="sess_id"\>)(.*?)(?=\</TD)', source)[0]), #In Person, Hybrid, Online, etc.
-                                'Attributes': findall(r'(?<="\>)(.*?)(?=\<)', findall(r'(?<=MULTIPLE ID\="attr_id"\>)(.*?)(?=\</TD)', source)[0])
-                            }
-                            
-                            try:  
-                                second_headers['Referer'] = 'https://selfservice.drew.edu/prod/bwckgens.p_proc_term_date'
-                                third_response = session.post('/prod/bwckschd.p_get_crse_unsec', headers=second_headers, data='term_in=202330&sel_subj=dummy&sel_day=dummy&sel_schd=dummy&sel_insm=dummy&sel_camp=dummy&sel_levl=dummy&sel_sess=dummy&sel_instr=dummy&sel_ptrm=dummy&sel_attr=dummy&sel_subj=EAP&sel_subj=AMST&sel_subj=ANTH&sel_subj=ARBC&sel_subj=ART&sel_subj=ARTH&sel_subj=ARFA&sel_subj=AREL&sel_subj=ARSP&sel_subj=ARWR&sel_subj=ARLT&sel_subj=ARTT&sel_subj=BBCL&sel_subj=BCHM&sel_subj=BIOL&sel_subj=BST&sel_subj=CHEM&sel_subj=CHIN&sel_subj=CE&sel_subj=CLAS&sel_subj=CRW&sel_subj=CSCI&sel_subj=CRES&sel_subj=DANC&sel_subj=DATA&sel_subj=DMIN&sel_subj=ECON&sel_subj=EDUC&sel_subj=EOS&sel_subj=ENGH&sel_subj=ENV&sel_subj=ESS&sel_subj=ETH&sel_subj=FILM&sel_subj=FIN&sel_subj=FREN&sel_subj=GERM&sel_subj=GDR&sel_subj=HIST&sel_subj=HOST&sel_subj=HON&sel_subj=HUM&sel_subj=INTD&sel_subj=INTF&sel_subj=INTC&sel_subj=ITAL&sel_subj=LAT&sel_subj=DREW&sel_subj=LING&sel_subj=MATH&sel_subj=MCOM&sel_subj=MDHM&sel_subj=MUS&sel_subj=NEUR&sel_subj=PAST&sel_subj=PCC&sel_subj=PHIL&sel_subj=PE&sel_subj=PHYS&sel_subj=PSCI&sel_subj=PRTH&sel_subj=PREA&sel_subj=PSYC&sel_subj=PH&sel_subj=REL&sel_subj=RLSC&sel_subj=REDU&sel_subj=RUSS&sel_subj=SOC&sel_subj=SPAN&sel_subj=SPCH&sel_subj=STAT&sel_subj=TMUS&sel_subj=THST&sel_subj=THEA&sel_subj=TPHL&sel_subj=THEO&sel_subj=TREC&sel_subj=UNIV&sel_subj=VOCF&sel_subj=WESM&sel_subj=WGST&sel_subj=WOR&sel_subj=WRTG&sel_crse=&sel_title=&sel_schd=%25&sel_from_cred=&sel_to_cred=&sel_levl=UG&sel_ptrm=%25&sel_dunt_unit=&sel_dunt_code=DAY&sel_instr=%25&sel_sess=%25&sel_attr=%25&begin_hh=0&begin_mi=0&begin_ap=a&end_hh=0&end_mi=0&end_ap=a')
+                    if not all_calanders: calanders = [calanders[0]]
+
+                    for calander in calanders:
+                        start_time = time()
+                        try:
+                            second_headers = {
+                                'Content-Type': 'application/x-www-form-urlencoded',
+                                'Origin': 'https://selfservice.drew.edu',
+                                'Accept-Encoding': 'gzip, deflate, br',
+                                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.1 Safari/605.1.15',
+                                'Referer': 'https://selfservice.drew.edu/prod/bwckschd.p_disp_dyn_sched',
+                                'Accept-Language': 'en-US,en;q=0.9'
+                                }
+                            second_data = {'p_calling_proc': 'bwckschd.p_disp_dyn_sched', 'p_term': calander['Calander ID'], 'p_by_date': 'Y', 'p_from_date': '', 'p_to_date': ''}
+
+                            second_response = session.post('/prod/bwckgens.p_proc_term_date', headers=second_headers, data=second_data)
+                            if '>Class Schedule Search</' in second_response.text:
+                                source = second_response.text.strip().replace('\n', '')
                                 
-                                if 'Class Schedule Listing<' in third_response.text:
-                                    second_headers['Referer'] = 'https://selfservice.drew.edu/prod/bwckschd.p_get_crse_unsec'
-                                    soup = BeautifulSoup(third_response.content, features='html.parser')
+                                subset = findall(r'(?<=subj_id"\>)(.*?)(?=\<\/select)', source)[0]
+                                mappings = {item.split('">')[0]: item.split('">')[1] for item in findall(r'(?<=OPTION VALUE=")(.*?)(?=\<)', subset)}
+                                self._update_mappings(mappings)
+                                                                
+                                terms_one = [term.replace('" value="', '=') for term in findall(r'(?<="hidden" name=")(.*?)(?=" /)', source)]
+                                terms_two = [f'sel_subj={course}' for course in findall(r'(?<=OPTION VALUE\=")(.*?)(?=")', subset)]
+                                terms_three = [f'{term}=' for term in findall(r'(?<=input type\="text" name\=")(.*?)(?=")', source)]
+                                terms_four = [f'{a}={b}' for a, b in zip(findall(r'(?<=select name\=")(.*?)(?=")', source)[1:], findall(r'(?<="\>\<OPTION VALUE\=")(.*?)(?=")', source)[1:])]
+                                
+                                third_data = '&'.join(terms_one + terms_two + terms_three + terms_four)
+                                third_data = third_data.replace('%', '%25')
+                                
+                                try:  
+                                    second_headers['Referer'] = 'https://selfservice.drew.edu/prod/bwckgens.p_proc_term_date'
+                                    third_response = session.post('/prod/bwckschd.p_get_crse_unsec', headers=second_headers, data=third_data)
                                     
-                                    table = soup.find('table', class_='datadisplaytable')
-                                    rows = iter(table.find_all('tr'))
-                                    
-                                    courses = []
-                                    course = {}
-
-                                    while True:
-                                        try:
-                                            row = next(rows)
-                                            if row.find('th') and row.find('th')['class'][0] == 'ddtitle':
-                                                item = row.text.strip().split(' - ')
-                                                if len(item) != 4: #Instance when Course Name has ' - '
-                                                    item[0] = item[0] + ' - ' + item[1]
-                                                    del item[1]
-                                                
-                                                course = {
-                                                    'CRN': item[1],
-                                                    'Section': item[3],
-                                                    'Subject': self._format_subject(item[2].split(' ')[0]),
-                                                    'Abbreviation': self._format_abbreviation(item[2].split(' ')[0]),
-                                                    'Level': item[2].split(' ')[1],
-                                                    'Name': item[0],
-                                                    'Description': None,
-                                                    'Credits': None,
-                                                    'Capacity': None,
-                                                    'Registered': None,
-                                                    'Remaining': None,
-                                                    'Waitlisted': None,
-                                                    'Attributes': [],
-                                                    'Properties': []
-                                                    }
-
-                                                course['Capacity'], course['Registered'], course['Remaining'], course['Waitlisted'] = self._get_numbers(session, second_headers, row.find('a')['href'])
-                                                row = next(rows)
-
-                                                course['Description'] = self._get_desc(session, second_headers, row.find('a')['href'])
-                                                course['Credits'] = findall(r'\d\.\d\d\d.*(?= )', row.text)[0]
-                                                course['Attributes'] = self._convert_attributes(findall(r'(?<=Attributes\: )(.*?)(?= \n)', row.text)[0].split(', ') if 'Attributes' in row.text else [])
-
-                                                rendezvous = row.find_all('tr')
-                                                del rendezvous[0] # Contains column headers
-                                                
-                                                for rende in rendezvous:
-                                                    sub_rows = rende.find_all('td')
-                                                    course['Properties'].append({ #Apparently a class can have multipe meeting locations, dates, etc?
-                                                        'Type': self._format_type(sub_rows[0].text),
-                                                        'Time': self._format_time(sub_rows[1].text),
-                                                        'Days': self._format_day(sub_rows[2].text),
-                                                        'Location': self._format_location(sub_rows[3].text),
-                                                        'Period': sub_rows[4].text, #Presumed to be the same for every course.
-                                                        'Nature': self._format_nature(sub_rows[5].text),
-                                                        'Instructors': self._convert_instructors(sub_rows[6].text.strip())
-                                                        })
-                                                courses.append(course)
-
-                                        except StopIteration: break
-                                    return courses
-                                    with open('table.json', 'w', encoding='UTF-8') as f: f.write(dumps(courses, indent=4))
-                            except Exception as e: print(e)
-                    except Exception as e: print(e)
+                                    if 'Class Schedule Listing<' in third_response.text:
+                                        second_headers['Referer'] = 'https://selfservice.drew.edu/prod/bwckschd.p_get_crse_unsec'
+                                        soup = BeautifulSoup(third_response.content, features='html.parser')
+                                        
+                                        table = soup.find('table', class_='datadisplaytable')
+                                        rows = table.find_all('tr')
+                                        
+                                        courses = self._parse_courses(rows, session, second_headers)
+                                        calander['Processing Time'] = round(time() - start_time)
+                                        calander['Courses'] = courses
+                                        print(f'Done Calander {calander["Calander Name"]}')
+                                except Exception as e: print('Getting Courses', e, calander)
+                        except Exception as e: print('Getting Course Search Options', e, calander)
+                    return calanders
+                    # with open('table.json', 'w', encoding='UTF-8') as f: f.write(dumps(calanders, indent=4))
             except Exception as e: print(e)
 
-schedule = Schedules()
-courses = schedule.get_courses()
+@app.route('/get_courses', methods=['GET'])
+@cache.cached(timeout=60 * 10)
+def handle_request():
+    return schedule.get_courses(all_calanders = False)
 
-with open('table.json', 'w', encoding='UTF-8') as f: f.write(dumps(courses, indent=4))
+schedule = Schedules()
+app.run(host='0.0.0.0', debug=True, port=8080)
