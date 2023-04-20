@@ -1,5 +1,5 @@
 from bs4 import BeautifulSoup
-from httpx import Client
+from httpx import Client, AsyncClient
 from urllib3 import disable_warnings
 from re import findall
 from time import time
@@ -8,6 +8,7 @@ from typing import Optional
 from flask import Flask
 from flask_caching import Cache
 from flask_cors import CORS
+import asyncio
 disable_warnings()
 
 app = Flask(__name__)
@@ -34,6 +35,8 @@ class Schedules():
         self.username = username
         self.password = password
         self.valid = False
+        self.number_uris = []
+        self.desc_uris = []
     
     def _authenticate(self) -> None:
         with Client(follow_redirects=True, verify=False, timeout=30) as session:
@@ -96,29 +99,9 @@ class Schedules():
                     except Exception as e: raise Exception(f"Error: {e}")
             except Exception as e: raise Exception(f"Error: {e}")
     
-    def _get_desc(self, session: Client, headers: dict, uri: str) -> list[dict]:
-        try:
-            a = session.get('https://selfservice.drew.edu/' + uri, headers=headers)
-            if '>Catalog Entries<' in a.text:
-                soup = BeautifulSoup(a.content, features='html.parser')
-                selection = soup.find('td', class_='ntdefault')
-                
-                return findall(r'(?<=class="ntdefault"\>)(.*?)(?=\<)', str(selection).replace('\n', ''))[0].strip()
-        except Exception as e: print(e)
-    
-    def _get_numbers(self, session: Client, headers: dict, uri: str) -> list[dict]:
-        try:
-            a = session.get('https://selfservice.drew.edu/' + uri, headers=headers)
-            if '>Detailed Class Information<' in a.text:
-                soup = BeautifulSoup(a.content, features='html.parser')
-                table = soup.find_all('table', class_='datadisplaytable')[1]
-                rows = table.find_all('tr')
-                
-                seats = rows[1].find_all('td', class_='dddefault')
-                waitlisted = rows[2].find_all('td', class_='dddefault')
-                
-                return int(seats[0].text), int(seats[1].text), int(seats[2].text), int(waitlisted[1].text)              
-        except Exception as e: print(e)
+    def _reset_uris(self) -> None:
+        self.number_uris = []
+        self.desc_uris = []    
     
     def _format_subject(self, abbreviation: str) -> list[dict]:
         abbreviation = SUBJECT_MAPPING[abbreviation]
@@ -232,7 +215,7 @@ class Schedules():
             SUBJECT_MAPPING = dict(sorted(SUBJECT_MAPPING.items(), key=lambda x:x[1]))
             with open('mappings.json', 'w', encoding='UTF-8') as f: f.write(dumps(SUBJECT_MAPPING, indent=4))
      
-    def _parse_courses(self, rows: list, session: Client, second_headers: dict) -> list[dict]:
+    def _parse_courses(self, rows: list) -> list[dict]:
         rows = iter(rows)
         
         courses = []
@@ -264,10 +247,15 @@ class Schedules():
                         'Properties': []
                         }
 
-                    course['Capacity'], course['Registered'], course['Remaining'], course['Waitlisted'] = self._get_numbers(session, second_headers, row.find('a')['href'])
+                    course_uri = row.find('a')['href']
+                    self.number_uris.append(course_uri)
+                    
                     row = next(rows)
                     
-                    course['Description'] = self._get_desc(session, second_headers, row.find('a')['href'])
+                    desc_uri = row.find('a')['href']
+                    self.desc_uris.append(desc_uri)
+                    
+                    # # Additional Req 2
                     course['Credits'] = findall(r'\d\.\d\d\d.*(?= )', row.text)[0].replace(' TO        ', ' - ')
                     course['Attributes'] = self._convert_attributes(findall(r'(?<=Attributes\: )(.*?)(?= \n)', row.text)[0].split(', ') if 'Attributes' in row.text else [])
 
@@ -315,7 +303,7 @@ class Schedules():
                     for cal_id, cal_name in zip(cal_ids, cal_names): calanders.append({'Calander ID': cal_id, 'Calander Name': cal_name.replace(' (View only)', '')})
 
                     if not all_calanders: calanders = [calanders[0]]
-
+#                    
                     for calander in calanders:
                         start_time = time()
                         try:
@@ -357,16 +345,63 @@ class Schedules():
                                         table = soup.find('table', class_='datadisplaytable')
                                         rows = table.find_all('tr')
                                         
-                                        courses = self._parse_courses(rows, session, second_headers)
+                                        courses = self._parse_courses(rows)
+                                        asyncio.run(self._visit_uris(second_headers))
+                                                                                
+                                        for course, num, desc in zip(courses, self.number_uris, self.desc_uris): # Unpacking
+                                            course['Capacity'] = num['Capacity']
+                                            course['Registered'] = num['Registered']
+                                            course['Remaining'] = num['Remaining']
+                                            course['Waitlisted'] = num['Waitlisted']
+                                            course['Description'] = desc                                            
+                                        
                                         calander['Processing Time'] = round(time() - start_time)
-                                        calander['Courses'] = courses
-                                        print(f'Done Calander {calander["Calander Name"]}')
+                                        calander['Courses'] = courses  
+                                        self._reset_uris()
+                                        
+                                        print(f'Done Calander {calander["Calander Name"]} in {calander["Processing Time"]}')
                                 except Exception as e: print('Getting Courses', e, calander)
-                        except Exception as e: print('Getting Course Search Options', e, calander)
+                        except Exception as e: print('Getting Course Search Options', e, calander) 
                     return calanders
-                    # with open('./table.json', 'w', encoding='UTF-8') as f: f.write(dumps(calanders, indent=4))
-            except Exception as e: print(e)
+                    # with open('table.json', 'w', encoding='UTF-8') as f: f.write(dumps(calanders, indent=4))
+            except Exception as e: print('Dynamic Schedule Page', e)
 
+    async def _visit_uris(self, second_headers: dict) -> tuple[list, list]:
+        async with AsyncClient(base_url='https://selfservice.drew.edu', verify=False, timeout=30) as async_session:
+            try:
+                tasks = [self._get_desc(async_session, second_headers, number_uri) for number_uri in self.desc_uris]
+                self.desc_uris = await asyncio.gather(*tasks)
+                
+                tasks = [self._get_numbers(async_session, second_headers, number_uri) for number_uri in self.number_uris]
+                self.number_uris = await asyncio.gather(*tasks)
+            except Exception as e:
+                print('Visiting URIs', e)
+    
+    async def _get_desc(self, session: AsyncClient, headers: dict, uri: str) -> str:
+        try:
+            a = await session.get(uri, headers=headers)
+            if '>Catalog Entries<' in a.text:
+                soup = BeautifulSoup(a.content, features='html.parser')
+                selection = soup.find('td', class_='ntdefault')
+                
+                return findall(r'(?<=class="ntdefault"\>)(.*?)(?=\<)', str(selection).replace('\n', ''))[0].strip()
+        except Exception as e: print('Getting Description', e)
+    
+    async def _get_numbers(self, session: AsyncClient, headers: dict, uri: str) -> dict[str: int]:
+        try:
+            a = await session.get(uri, headers=headers)
+            if '>Detailed Class Information<' in a.text:
+                soup = BeautifulSoup(a.content, features='html.parser')
+                table = soup.find_all('table', class_='datadisplaytable')[1]
+                rows = table.find_all('tr')
+                
+                seats = rows[1].find_all('td', class_='dddefault')
+                waitlisted = rows[2].find_all('td', class_='dddefault')
+                
+                return {'Capacity': int(seats[0].text), 'Registered': int(seats[1].text), 'Remaining': int(seats[2].text), 'Waitlisted': int(waitlisted[1].text)}             
+        except Exception as e: print('Getting Numbers', e)
+    
+    
 @app.route('/get_courses', methods=['GET'])
 @cache.cached(timeout=60 * 10)
 def handle_request():
