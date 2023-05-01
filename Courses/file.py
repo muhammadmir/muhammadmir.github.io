@@ -287,7 +287,7 @@ class Schedules():
         return courses
 
     def get_courses(self, all_calanders: bool = False) -> list[dict]:
-        with Client(base_url='https://selfservice.drew.edu', verify=False, timeout=30) as session:
+        with Client(base_url='https://selfservice.drew.edu', verify=False, timeout=60) as session:
             try:
                 first_headers = {
                     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
@@ -367,7 +367,7 @@ class Schedules():
             except Exception as e: print('Dynamic Schedule Page', e)
 
     async def _visit_uris(self, second_headers: dict) -> tuple[list, list]:
-        async with AsyncClient(base_url='https://selfservice.drew.edu', verify=False, timeout=30) as async_session:
+        async with AsyncClient(base_url='https://selfservice.drew.edu', verify=False, timeout=60) as async_session:
             try:
                 tasks = [self._get_desc(async_session, second_headers, number_uri) for number_uri in self.desc_uris]
                 self.desc_uris = await asyncio.gather(*tasks)
@@ -385,7 +385,7 @@ class Schedules():
                 selection = soup.find('td', class_='ntdefault')
                 
                 return findall(r'(?<=class="ntdefault"\>)(.*?)(?=\<)', str(selection).replace('\n', ''))[0].strip()
-        except Exception as e: print('Getting Description', e)
+        except Exception as e: print('Getting Description', e, type(e))
     
     async def _get_numbers(self, session: AsyncClient, headers: dict, uri: str) -> dict[str: int]:
         try:
@@ -399,7 +399,7 @@ class Schedules():
                 waitlisted = rows[2].find_all('td', class_='dddefault')
                 
                 return {'Capacity': int(seats[0].text), 'Registered': int(seats[1].text), 'Remaining': int(seats[2].text), 'Waitlisted': int(waitlisted[1].text)}             
-        except Exception as e: print('Getting Numbers', e)
+        except Exception as e: print('Getting Numbers', e, type(e))
     
     
 @app.route('/get_courses', methods=['GET'])
