@@ -2,7 +2,7 @@ function formatProp(properties) {
     str = ''
     for (var i = 0; i < properties.length; i++) {
         str += '<tr>'
-        str += '<td style="background-color: #f2f2f2; text-align: center; font-weight:bold" colspan="6">Schedule Meeting Times #' + (i + 1).toString() + '</td>'
+        str += '<td style="background-color: #f2f2f2; text-align: center; font-weight:bold" colspan="7">Schedule Meeting Times #' + (i + 1).toString() + '</td>'
         str += '</tr>'
 
         str += '<tr>'
@@ -11,6 +11,7 @@ function formatProp(properties) {
         str += '<td style="font-weight:bold">Time</td>'
         str += '<td style="font-weight:bold">Days</td>'
         str += '<td style="font-weight:bold">Location</td>'
+        str += '<td style="font-weight:bold">Period</td>'
         str += '<td style="font-weight:bold">Instructors</td>'
         str += '</tr>'
 
@@ -19,6 +20,7 @@ function formatProp(properties) {
         str += '<td>' + properties[i].Time.Name + '</td>'
         str += '<td>' + properties[i].Days.map(day => day.Name).join(', ') + '</td>'
         str += '<td>' + properties[i].Location.Name + '</td>'
+        str += '<td>' + properties[i].Period.Name + '</td>'
         str += '<td>' + properties[i].Instructors.map(instr => instr.Name).join(', ') + '</td>'
         str += '</tr>'
     }
@@ -52,7 +54,7 @@ function format(course) {
 $(document).ready(function () {
     var table = $('#courses').DataTable({
         ajax: {
-            url: "https://snowalienatedarchives.muhammadmir1.repl.co/get_courses",
+            url: "https://courses-server.muhammadmir1.repl.co/get_courses",
             dataSrc: function(data) {
                 return data[0].Courses
             }

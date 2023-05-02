@@ -22,10 +22,11 @@ ALL = {
     'Subjects': [],
     'Abbreviations': [],
     'Types': [],
+    'Times': [],
+    'Days': [],
     'Locations': [],
     'Natures': [],
-    'Days': [],
-    'Times': [],
+    'Periods': [],
     'Instructors': [],
     'Attributes': []
 }
@@ -103,7 +104,7 @@ class Schedules():
         self.number_uris = []
         self.desc_uris = []    
     
-    def _format_subject(self, abbreviation: str) -> list[dict]:
+    def _format_subject(self, abbreviation: str) -> dict:
         abbreviation = SUBJECT_MAPPING[abbreviation]
         
         try: subject_dict = next(item for item in ALL['Subjects'] if item["Name"] == abbreviation)
@@ -113,7 +114,7 @@ class Schedules():
         
         return subject_dict
     
-    def _format_abbreviation(self, abbreviation: str) -> list[dict]:
+    def _format_abbreviation(self, abbreviation: str) -> dict:
         try: abbreviation_dict = next(item for item in ALL['Abbreviations'] if item["Name"] == abbreviation)
         except Exception as e:
             abbreviation_dict = {'ID': len(ALL['Abbreviations']) + 1, 'Name': abbreviation}
@@ -121,7 +122,7 @@ class Schedules():
         
         return abbreviation_dict
     
-    def _format_type(self, class_type: str) -> list[dict]:
+    def _format_type(self, class_type: str) -> dict:
         try: class_type_dict = next(item for item in ALL['Types'] if item["Name"] == class_type)
         except Exception as e:
             class_type_dict = {'ID': len(ALL['Types']) + 1, 'Name': class_type}
@@ -129,23 +130,7 @@ class Schedules():
             
         return class_type_dict
         
-    def _format_location(self, location: str) -> list[dict]:
-        try: location_dict = next(item for item in ALL['Locations'] if item["Name"] == location)
-        except Exception as e:
-            location_dict = {'ID': len(ALL['Locations']) + 1, 'Name': location}
-            ALL['Locations'].append(location_dict)
-            
-        return location_dict
-    
-    def _format_nature(self, nature: str) -> list[dict]:
-        try: nature_dict = next(item for item in ALL['Natures'] if item["Name"] == nature)
-        except Exception as e:
-            nature_dict = {'ID': len(ALL['Natures']) + 1, 'Name': nature}
-            ALL['Natures'].append(nature_dict)
-            
-        return nature_dict
-    
-    def _format_time(self, t: str) -> list[dict]:
+    def _format_time(self, t: str) -> dict:
         try: t = t.upper().replace(' - ', ' - ')
         except Exception as e: t = 'TBA'
 
@@ -155,17 +140,26 @@ class Schedules():
             ALL['Times'].append(time_dict)
 
         return time_dict
-    
-    def _format_day(self, days: str) -> list[dict]:
-        final_days = []
-        for day in days:
 
+    def _format_days(self, days: str) -> list[dict]:
+        final_days = []
+        
+        # had a case where day was "\u00a0", need to handle
+        if days == 'TBA': # Sloppy way to handle this, for the case when no Meeting times are defined
+            try: day_dict = next(item for item in ALL['Days'] if item["Name"] == days) #Get Dict by looking up with Name Key
+            except Exception as e:
+                day_dict = {'ID': len(ALL['Days']) + 1, 'Name': days}
+                ALL['Days'].append(day_dict)            
+            return [day_dict]
+        
+        for day in days:
             if day == 'M': day = 'Monday'
             elif day == 'T': day = 'Tuesday'
             elif day == 'W': day = 'Wednesday'
             elif day == 'R': day = 'Thursday'
-            else: day = 'Friday'
-
+            elif day == 'F': day = 'Friday'
+            elif day == 'S': day = 'Saturday'
+            
             try: day_dict = next(item for item in ALL['Days'] if item["Name"] == day) #Get Dict by looking up with Name Key
             except Exception as e:
                 day_dict = {'ID': len(ALL['Days']) + 1, 'Name': day}
@@ -173,8 +167,32 @@ class Schedules():
             final_days.append(day_dict)
 
         return final_days
-    
-    def _convert_instructors(self, instructors: str) -> list[dict]:
+
+    def _format_location(self, location: str) -> dict:
+        try: location_dict = next(item for item in ALL['Locations'] if item["Name"] == location)
+        except Exception as e:
+            location_dict = {'ID': len(ALL['Locations']) + 1, 'Name': location}
+            ALL['Locations'].append(location_dict)
+            
+        return location_dict
+
+    def _format_period(self, period: str) -> dict:
+        try: period_dict = next(item for item in ALL['Periods'] if item["Name"] == period)
+        except Exception as e:
+            period_dict = {'ID': len(ALL['Periods']) + 1, 'Name': period}
+            ALL['Periods'].append(period_dict)
+            
+        return period_dict
+
+    def _format_nature(self, nature: str) -> dict:
+        try: nature_dict = next(item for item in ALL['Natures'] if item["Name"] == nature)
+        except Exception as e:
+            nature_dict = {'ID': len(ALL['Natures']) + 1, 'Name': nature}
+            ALL['Natures'].append(nature_dict)
+            
+        return nature_dict
+
+    def _format_instructors(self, instructors: str) -> list[dict]:
         try: temp_instructors = " ".join(instructors.replace(' (P)', '').split()).split(', ')
         except Exception as e: temp_instructors = ['TBA']
 
@@ -189,7 +207,7 @@ class Schedules():
  
         return final_instructors
 
-    def _convert_attributes(self, attributes: list) -> list[dict]:
+    def _format_attributes(self, attributes: list) -> list[dict]:
         final_attributes = []
         
         for attr in attributes:
@@ -255,9 +273,8 @@ class Schedules():
                     desc_uri = row.find('a')['href']
                     self.desc_uris.append(desc_uri)
                     
-                    # # Additional Req 2
                     course['Credits'] = findall(r'\d\.\d\d\d.*(?= )', row.text)[0].replace(' TO        ', ' - ')
-                    course['Attributes'] = self._convert_attributes(findall(r'(?<=Attributes\: )(.*?)(?= \n)', row.text)[0].split(', ') if 'Attributes' in row.text else [])
+                    course['Attributes'] = self._format_attributes(findall(r'(?<=Attributes\: )(.*?)(?= \n)', row.text)[0].split(', ') if 'Attributes' in row.text else [])
 
                     rendezvous = row.find_all('tr')
                     
@@ -266,17 +283,29 @@ class Schedules():
                         
                         for rende in rendezvous:
                             sub_rows = rende.find_all('td')
-                            if len(sub_rows) < 6: continue
+                            if len(sub_rows) < 6: 
+                                continue
                             
                             course['Properties'].append({ # Courses can have multiple meeting locations/times
                             'Type': self._format_type(sub_rows[0].text),
                             'Time': self._format_time(sub_rows[1].text),
-                            'Days': self._format_day(sub_rows[2].text),
+                            'Days': self._format_days(sub_rows[2].text),
                             'Location': self._format_location(sub_rows[3].text),
-                            'Period': sub_rows[4].text, #Presumed to be the same for every course.
+                            'Period': self._format_period(sub_rows[4].text),
                             'Nature': self._format_nature(sub_rows[5].text),
-                            'Instructors': self._convert_instructors(sub_rows[6].text.strip())
+                            'Instructors': self._format_instructors(sub_rows[6].text.strip())
                             })
+                    else: # Handling required for DataTables orthogonal data                        
+                        course['Properties'].append({
+                        'Type': self._format_type('TBA'),
+                        'Time': self._format_time('TBA'),
+                        'Days': self._format_days('TBA'),
+                        'Location': self._format_location('TBA'),
+                        'Period': self._format_period('TBA'),
+                        'Nature': self._format_nature('TBA'),
+                        'Instructors': self._format_instructors('TBA')
+                        })
+                            
                     courses.append(course)
             except StopIteration: break
             except Exception as e:
@@ -300,10 +329,10 @@ class Schedules():
                     calanders = []
                     cal_ids = findall(r'(?<=OPTION VALUE=")(\d\d.*?)(?=")', first_response.text)
                     cal_names = findall(r'(?<=\d\d"\>)(.*?)(?=\<)', first_response.text)
-                    for cal_id, cal_name in zip(cal_ids, cal_names): calanders.append({'Calander ID': cal_id, 'Calander Name': cal_name.replace(' (View only)', '')})
+                    for cal_id, cal_name in zip(cal_ids, cal_names): calanders.append({'Calander ID': cal_id, 'Calander Name': cal_name.replace(' (View only)', ''), 'Processing Time': 0, 'Courses': []})
 
                     if not all_calanders: calanders = [calanders[0]]
-#                    
+                    
                     for calander in calanders:
                         start_time = time()
                         try:
@@ -365,8 +394,8 @@ class Schedules():
                     return calanders
                     # with open('table.json', 'w', encoding='UTF-8') as f: f.write(dumps(calanders, indent=4))
             except Exception as e: print('Dynamic Schedule Page', e)
-
-    async def _visit_uris(self, second_headers: dict) -> tuple[list, list]:
+    
+    async def _visit_uris(self, second_headers: dict) -> None:
         async with AsyncClient(base_url='https://selfservice.drew.edu', verify=False, timeout=60) as async_session:
             try:
                 tasks = [self._get_desc(async_session, second_headers, number_uri) for number_uri in self.desc_uris]
@@ -386,8 +415,9 @@ class Schedules():
                 
                 return findall(r'(?<=class="ntdefault"\>)(.*?)(?=\<)', str(selection).replace('\n', ''))[0].strip()
         except Exception as e: print('Getting Description', e, type(e))
+        return ''
     
-    async def _get_numbers(self, session: AsyncClient, headers: dict, uri: str) -> dict[str: int]:
+    async def _get_numbers(self, session: AsyncClient, headers: dict, uri: str) -> dict[str, int]:
         try:
             a = await session.get(uri, headers=headers)
             if '>Detailed Class Information<' in a.text:
@@ -400,7 +430,7 @@ class Schedules():
                 
                 return {'Capacity': int(seats[0].text), 'Registered': int(seats[1].text), 'Remaining': int(seats[2].text), 'Waitlisted': int(waitlisted[1].text)}             
         except Exception as e: print('Getting Numbers', e, type(e))
-    
+        return {'Capacity': 0, 'Registered': 0, 'Remaining': 0, 'Waitlisted': 0}
     
 @app.route('/get_courses', methods=['GET'])
 @cache.cached(timeout=60 * 10)
