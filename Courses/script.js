@@ -28,17 +28,17 @@ function formatProp(properties) {
 }
 
 function formatCRN(crn) {
-    if (crn != null) return '<tr><td colspan="6"><b>CRN: </b>' + crn + '</td></tr>';
+    if (crn != null) return '<tr><td colspan="7"><b>CRN: </b>' + crn + '</td></tr>';
     else return '';
 }
 
 function formatDesc(description) {
-    if (description != null) return '<tr><td colspan="6"><b>Description: </b>' + description + '</td></tr>';
+    if (description != null) return '<tr><td colspan="7"><b>Description: </b>' + description + '</td></tr>';
     else return ''
 }
 
 function formatAttr(attributes) {
-    if (attributes != null) return '<tr><td colspan="6"><b>Attributes: </b>' + attributes.map(attr => attr.Name).join(", ") + '</td></tr>';
+    if (attributes != null) return '<tr><td colspan="7"><b>Attributes: </b>' + attributes.map(attr => attr.Name).join(", ") + '</td></tr>';
     else return ''
 }
 
