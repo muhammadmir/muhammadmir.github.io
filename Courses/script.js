@@ -42,11 +42,60 @@ function formatAttr(attributes) {
     else return ''
 }
 
+function formatPreReq(prerequisites) {
+    if (prerequisites != null) return '<tr><td colspan="7"><b>Prerequisites: </b>' + prerequisites.join(", ") + '</td></tr>';
+    else return ''
+}
+
+function formatCoReq(corequisites) {
+    if (corequisites != null) return '<tr><td colspan="7"><b>Corequisites: </b>' + corequisites.join(", ") + '</td></tr>';
+    else return ''
+}
+
+function formatMutualExclusions(mutualExclusions) {
+    if (mutualExclusions != null) return '<tr><td colspan="7"><b>Mutual Exclusions: </b>' + mutualExclusions.join(", ") + '</td></tr>';
+    else return ''
+}
+
+function formatCrossList(crossListCourses) {
+    if (crossListCourses != null) return '<tr><td colspan="7"><b>Cross List Courses: </b>' + crossListCourses.join(", ") + '</td></tr>';
+    else return ''
+}
+
+function formatRestrictions(restrictions) {
+    if (restrictions != null) {
+
+        let entry = '';
+
+        restrictions.forEach(item => {
+        const description = `<br><b>${item.Description}</b>`;
+
+        let reqList = '';
+        item.Requirements.forEach(requirement => {
+            reqList += `<li>${requirement}</li>`;
+        });
+
+        entry += `${description}<ul>${reqList}</ul>`;
+        });
+
+        return '<tr><td colspan="7"><b>Restrictions: </b>' + entry + '</td></tr>';
+    }
+    else return ''
+}
+
 /* Formatting function for row details - modify as you need */
 function format(course) {
     return (
         '<table width=100%>' +
-        formatCRN(course.CRN) + formatDesc(course.Description) + formatAttr(course.Attributes) + formatProp(course.Properties) +
+        formatCRN(course.CRN) +
+        formatDesc(course.Description) +
+        formatPreReq(course.Prerequisites) +
+        formatCoReq(course.Corequisites) +
+        formatMutualExclusions(course["Mutual Exclusions"]) +
+        formatCrossList(course["Cross List Courses"]) +
+        formatRestrictions(course["Restrictions"]) +
+        formatAttr(course.Attributes) +
+        formatProp(course.Properties) +
         '</table>'
     );
 }
@@ -66,7 +115,7 @@ $(document).ready(function () {
         columnDefs: [
             {
                 visible: false,
-                targets: [2, 7, 13, 14, 15, 16, 17, 18, 19]
+                targets: [1, 7, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24]
             },
             {
                 searchPanes: {
@@ -143,10 +192,10 @@ $(document).ready(function () {
                 defaultContent: '',
             },
             {
-                data: 'Section',
+                data: 'CRN',
             },
             {
-                data: 'CRN',
+                data: 'Section',
             },
             {
                 data: 'Subject',
@@ -184,7 +233,22 @@ $(document).ready(function () {
             {
                 data: 'Waitlisted',
             },
+            { // 13
+                data: 'Prerequisites',
+            },
             {
+                data: 'Corequisites',
+            },
+            {
+                data: 'Mutual Exclusions',
+            },
+            {
+                data: 'Cross List Courses',
+            },
+            {
+                data: 'Restrictions',
+            },
+            { // 17
                 data: 'Attributes',
                 render: {
                     sp: '[].Name'

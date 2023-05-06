@@ -1,7 +1,7 @@
 from bs4 import BeautifulSoup
 from httpx import Client, AsyncClient
 from urllib3 import disable_warnings
-from re import findall
+from re import findall, sub
 from time import time
 from json import dumps, loads
 from typing import Optional
@@ -17,6 +17,9 @@ cache = Cache(app)
 CORS(app)
 
 # https://drew.edu/registrars-office/about-us/facultystaff/course-attribute-overview/
+
+from os import getcwd
+print(getcwd())
 with open('mappings.json', 'r', encoding='UTF-8') as f: SUBJECT_MAPPING = loads(f.read())
 ALL = {
     'Subjects': [],
@@ -36,7 +39,7 @@ class Schedules():
         self.username = username
         self.password = password
         self.valid = False
-        self.number_uris = []
+        self.number_and_stuff_uri = []
         self.desc_uris = []
     
     def _authenticate(self) -> None:
@@ -101,7 +104,7 @@ class Schedules():
             except Exception as e: raise Exception(f"Error: {e}")
     
     def _reset_uris(self) -> None:
-        self.number_uris = []
+        self.number_and_stuff_uri = []
         self.desc_uris = []    
     
     def _format_subject(self, abbreviation: str) -> dict:
@@ -230,7 +233,7 @@ class Schedules():
                 print(f'Added {key} --> {value}')
         
         if update:
-            SUBJECT_MAPPING = dict(sorted(SUBJECT_MAPPING.items(), key=lambda x:x[1]))
+            SUBJECT_MAPPING = dict(sorted(SUBJECT_MAPPING.items(), key = lambda x : x[1]))
             with open('mappings.json', 'w', encoding='UTF-8') as f: f.write(dumps(SUBJECT_MAPPING, indent=4))
      
     def _parse_courses(self, rows: list) -> list[dict]:
@@ -261,12 +264,17 @@ class Schedules():
                         'Registered': None,
                         'Remaining': None,
                         'Waitlisted': None,
+                        'Prerequisites': None,
+                        'Corequisites': None,
+                        'Mutual Exclusions': None,
+                        'Cross List Courses': None,
+                        'Restrictions': None,
                         'Attributes': [],
                         'Properties': []
-                        }
+                    }
 
                     course_uri = row.find('a')['href']
-                    self.number_uris.append(course_uri)
+                    self.number_and_stuff_uri.append(course_uri)
                     
                     row = next(rows)
                     
@@ -377,11 +385,20 @@ class Schedules():
                                         courses = self._parse_courses(rows)
                                         asyncio.run(self._visit_uris(second_headers))
                                                                                 
-                                        for course, num, desc in zip(courses, self.number_uris, self.desc_uris): # Unpacking
-                                            course['Capacity'] = num['Capacity']
-                                            course['Registered'] = num['Registered']
-                                            course['Remaining'] = num['Remaining']
-                                            course['Waitlisted'] = num['Waitlisted']
+                                        for course, num_and_stuff, desc in zip(courses, self.number_and_stuff_uri, self.desc_uris): # Unpacking
+                                            course['Capacity'] = num_and_stuff['Capacity']
+                                            course['Registered'] = num_and_stuff['Registered']
+                                            course['Remaining'] = num_and_stuff['Remaining']
+                                            course['Waitlisted'] = num_and_stuff['Waitlisted']
+                                            
+                                            stuff = num_and_stuff['Stuff']
+
+                                            course['Prerequisites'] = stuff['Prerequisites']
+                                            course['Corequisites'] = stuff['Corequisites']
+                                            course['Mutual Exclusions'] = stuff['Mutual Exclusions']
+                                            course['Cross List Courses'] = stuff['Cross List Courses']
+                                            course['Restrictions'] = stuff['Restrictions']
+                                            
                                             course['Description'] = desc                                            
                                         
                                         calander['Processing Time'] = round(time() - start_time)
@@ -395,14 +412,55 @@ class Schedules():
                     # with open('table.json', 'w', encoding='UTF-8') as f: f.write(dumps(calanders, indent=4))
             except Exception as e: print('Dynamic Schedule Page', e)
     
+    def _parse_extra_course_info(self, source: str) -> list:
+        source = sub(r'<a href="([^"]*)">(.*?)</a>', r'\2', source).replace('\n', '').replace('&nbsp;', '')
+        
+        no_needs = ['Search', 'Associated Term:', 'Capacity', 'Actual', 'Remaining', 'Seats', 'Waitlist Seats', 'Cross List Seats']
+        fields = [field.strip() for field in findall(r'(?<=class\="fieldlabeltext"\>)(.*?)(?=\<\/SPAN)', source)] # Remove trailing spaces
+        
+        fields = list(set(fields) - set(no_needs))
+        
+        stuff = {'Prerequisites': None, 'Corequisites': None, 'Mutual Exclusions': None, 'Cross List Courses': None, 'Restrictions': None}
+                
+        for field in fields:
+            if field not in ['Prerequisites:', 'Corequisites:', 'Mutual Exclusions:', 'Mutual Exclusion:', 'Cross List Courses:', 'Restrictions:']: print('New field: ', field)
+            else:
+                sub_parse = findall(r'(?<=' + field + r')(.*?)(?=\<SPAN|\<\/TD)', source)[0]
+                items = [item.strip() for item in findall(r'(?<=<br />)(.*?)(?=<br />)', sub_parse) if len(item.strip()) > 0 and item.strip() != '<br />'] # Remove empty items
+                  
+                #with open(f'temp/{field}.txt', 'a') as f: f.write(str(items) + '\n') 
+                        
+                if field == 'Prerequisites:':
+                    items = [item.replace('  ', ' ').replace('( ', '(').replace('Undergraduate level', '').replace('  ', ' ').replace('( ', '(').strip() for item in items] # Some cleanup, better formatting later?
+                    stuff['Prerequisites'] = items
+                elif field == 'Corequisites:':
+                    stuff['Corequisites'] = items
+                elif field == 'Mutual Exclusions:' or field == 'Mutual Exclusion:':
+                    del items[0] # First entry should just be description                            
+                    stuff['Mutual Exclusions'] = items
+                elif field == 'Cross List Courses:':
+                    stuff['Cross List Courses'] = items
+                elif field == 'Restrictions:':
+                    new_items = []
+                    for item in items:
+                        if 'following' in item:
+                            if 'req' in locals(): new_items.append(req) # Initial
+                            req = {'Description': item, 'Requirements': []}
+                        else: req['Requirements'].append(item)
+                    
+                    new_items.append(req)
+                    stuff['Restrictions'] = new_items
+
+        return stuff           
+    
     async def _visit_uris(self, second_headers: dict) -> None:
         async with AsyncClient(base_url='https://selfservice.drew.edu', verify=False, timeout=60) as async_session:
             try:
                 tasks = [self._get_desc(async_session, second_headers, number_uri) for number_uri in self.desc_uris]
-                self.desc_uris = await asyncio.gather(*tasks)
+                self.desc_uris = await asyncio.gather(*tasks) # Connection timeouts, cannot figure out yet, maybe dont use httpx
                 
-                tasks = [self._get_numbers(async_session, second_headers, number_uri) for number_uri in self.number_uris]
-                self.number_uris = await asyncio.gather(*tasks)
+                tasks = [self._get_numbers_and_stuff(async_session, second_headers, number_uri) for number_uri in self.number_and_stuff_uri]
+                self.number_and_stuff_uri = await asyncio.gather(*tasks)
             except Exception as e:
                 print('Visiting URIs', e)
     
@@ -417,20 +475,26 @@ class Schedules():
         except Exception as e: print('Getting Description', e, type(e))
         return ''
     
-    async def _get_numbers(self, session: AsyncClient, headers: dict, uri: str) -> dict[str, int]:
+    async def _get_numbers_and_stuff(self, session: AsyncClient, headers: dict, uri: str) -> dict:
         try:
             a = await session.get(uri, headers=headers)
             if '>Detailed Class Information<' in a.text:
                 soup = BeautifulSoup(a.content, features='html.parser')
+                
                 table = soup.find_all('table', class_='datadisplaytable')[1]
                 rows = table.find_all('tr')
                 
                 seats = rows[1].find_all('td', class_='dddefault')
                 waitlisted = rows[2].find_all('td', class_='dddefault')
                 
-                return {'Capacity': int(seats[0].text), 'Registered': int(seats[1].text), 'Remaining': int(seats[2].text), 'Waitlisted': int(waitlisted[1].text)}             
+                # Though we could account for cross-list seats, I will not
+                
+                stuff = self._parse_extra_course_info(a.text)
+                            
+                return {'Capacity': int(seats[0].text), 'Registered': int(seats[1].text), 'Remaining': int(seats[2].text), 'Waitlisted': int(waitlisted[1].text), 'Stuff': stuff}             
         except Exception as e: print('Getting Numbers', e, type(e))
-        return {'Capacity': 0, 'Registered': 0, 'Remaining': 0, 'Waitlisted': 0}
+        stuff = {'Prerequisites': None, 'Corequisites': None, 'Mutual Exclusions': None, 'Cross List Courses': None, 'Restrictions': None}
+        return {'Capacity': 0, 'Registered': 0, 'Remaining': 0, 'Waitlisted': 0, 'Stuff': stuff}
     
 @app.route('/get_courses', methods=['GET'])
 @cache.cached(timeout=60 * 10)
