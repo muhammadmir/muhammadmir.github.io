@@ -5,7 +5,7 @@ from re import findall, sub
 from time import time
 from json import dumps, loads
 from typing import Optional
-from flask import Flask
+from flask import Flask, request, jsonify
 from flask_caching import Cache
 from flask_cors import CORS
 import asyncio
@@ -509,12 +509,32 @@ class Schedules():
         
         stuff = {'Prerequisites': None, 'Corequisites': None, 'Mutual Exclusions': None, 'Cross List Courses': None, 'Restrictions': None}
         return {'Capacity': 0, 'Registered': 0, 'Remaining': 0, 'Waitlisted': 0, 'Stuff': stuff}
+
+def is_valid_request(calanders: list):
+    required_keys = ['Calander ID', 'Calander Name']
+    valid_request = True
+    for calander in calanders:
+        if type(calander) is not dict: valid_request = False
+        elif not all([True if calander_key in required_keys else False for calander_key in calander.keys()]): valid_request = False
     
-@app.route('/get_courses', methods=['GET'])
+    return valid_request        
+
+@app.route('/get_calanders', methods=['GET'])
+@cache.cached(timeout = 60 * 10)
+def handle_calander():
+    calanders = schedule.get_calanders(all_calanders = True)
+    return calanders
+
+@app.route('/get_courses', methods=['POST'])
 @cache.cached(timeout=60 * 10)
-def handle_request():
-    calanders = schedule.get_calanders(all_calanders = False)
-    return schedule.get_courses(calanders = calanders)
+def handle_courses():
+    calanders = request.get_json()
+    
+    if type(calanders) is not list: return jsonify({'Error': 'Content sent was not JSON.'})
+    elif not is_valid_request(calanders): return jsonify({'Error': 'Missing required keys.'})
+    elif len(calanders) != 1: return jsonify({'Error': 'Only one calanader can be selected.'})
+    else: return jsonify(schedule.get_courses(calanders = calanders))
+
 
 schedule = Schedules()
 app.run(host='0.0.0.0', debug=True, port=8080)

@@ -68,14 +68,14 @@ function formatRestrictions(restrictions) {
         let entry = '';
 
         restrictions.forEach(item => {
-        const description = `<br><b>${item.Description}</b>`;
+            const description = `<br><b>${item.Description}</b>`;
 
-        let reqList = '';
-        item.Requirements.forEach(requirement => {
-            reqList += `<li>${requirement}</li>`;
-        });
+            let reqList = '';
+            item.Requirements.forEach(requirement => {
+                reqList += `<li>${requirement}</li>`;
+            });
 
-        entry += `${description}<ul>${reqList}</ul>`;
+            entry += `${description}<ul>${reqList}</ul>`;
         });
 
         return '<tr><td colspan="7"><b>Restrictions: </b>' + entry + '</td></tr>';
@@ -103,8 +103,8 @@ function format(course) {
 $(document).ready(function () {
     var table = $('#courses').DataTable({
         ajax: {
-            url: "https://courses-server.muhammadmir1.repl.co/get_courses",
-            dataSrc: function(data) {
+            data: localStorage['Courses'],
+            dataSrc: function (data) {
                 return data[0].Courses
             }
         },
@@ -329,4 +329,7 @@ $(document).ready(function () {
             tr.addClass('shown');
         }
     });
+
+    document.getElementById('calander_name') = 'Calander: ' + localStorage['Calander Name'];
 });
+

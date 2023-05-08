@@ -1,48 +1,62 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang='en'>
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Datatables Example</title>
-    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.2/css/bulma.min.css"/>
-    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/bm/jq-3.6.0/dt-1.13.1/r-2.4.0/sp-2.1.0/sl-1.5.0/datatables.min.css"/>
- 
-    <script type="text/javascript" src="https://cdn.datatables.net/v/bm/jq-3.6.0/dt-1.13.1/r-2.4.0/sp-2.1.0/sl-1.5.0/datatables.min.js"></script>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>Select Calander</title>
+
+    <script src='multiselect-dropdown.js'></script>
+
+    <script src='https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js'
+        integrity='sha384-p34f1UUtsS3wqzfto5wAAmdvj+osOnFyQFpp4Ua3gs/ZVWx6oOypYoCJhGGScy+8'
+        crossorigin='anonymous'></script>
+    <link href='https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/css/bootstrap.min.css' rel='stylesheet'
+        integrity='sha384-wEmeIV1mKuiNpC+IOBjI7aAzPcEZeedi5yW5f2yOq55WWLwNGmvvx4Um1vskeMj0' crossorigin='anonymous'>
+
 </head>
 
-<script type="text/javascript" src="script.js"></script>
+<style>
+    select {
+        width: 20em;
+    }
+</style>
 
 <body>
-    <p>Hello. The data takes about 50 seconds to appear from the server and is cached for 10 minutes.</p>
-    <p>If you have feedback or suggestions, please send me an email at mmir@drew.edu or make a pull request.</p>
-    <p>PS: I would really appreciate frontend tips</p>
-    <table id="courses" class="table" width="100%">
-        <thead>
-            <tr>
-                <th></th>
-                <th>CRN</th>
-                <th>Section</th>
-                <th>Subject</th>
-                <th>Abbreviation</th>
-                <th>Level</th>
-                <th>Name</th>
-                <th>Description</th>
-                <th>Credits</th>
-                <th>Capacity</th>
-                <th>Registered</th>
-                <th>Remaining</th>
-                <th>Waitlisted</th>
-                <th>Attribute</th>
-                <th>Type</th>
-                <th>Time</th>
-                <th>Day</th>
-                <th>Location</th>
-                <th>Nature</th>
-                <th>Instructor</th>
-            </tr>
-        </thead>
-    </table>
+    <h1>Please Select Calander(s)</h1>
+    <label>Calander(s): </label>
+
+    <select name='field1' id='field1' multiple multiselect-search='true' multiselect-select-all='false'
+        multiselect-max-items='1' multiselect-hide-x='false'>
+    </select>
+
+    <br><br>
+    <form action='/main.html' class='inline'>
+        <button id='button' class="btn btn-light" action>Get Courses</button>
+    </form>
+
 </body>
+
+<script>
+    document.getElementById('button').onclick = function () {
+        alert('Fetching courses...');
+
+        const response = fetch('https://courses-server.muhammadmir1.repl.co/get_courses', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(calanders)
+        }).json();
+
+        if ('Error' in response) alert('Error from server: ' + response['Error']);
+        else localStorage['Courses'] = response
+    };
+
+    fetch('https://courses-server.muhammadmir1.repl.co/get_calanders').then(obj => obj.json()).then(obj => {
+        field1.innerHTML = obj.map(x => '<option value=' + x['Calander ID'] + '>' + x['Calander Name'] + '</option>');
+        field1.loadOptions();
+    })
+</script>
 
 </html>
