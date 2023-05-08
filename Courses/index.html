@@ -39,7 +39,7 @@
 
 <script>
     document.getElementById('button').onclick = function () {
-        alert('Fetching courses...');
+        document.getElementById('button') = 'Fetching courses...'
 
         const response = fetch('https://courses-server.muhammadmir1.repl.co/get_courses', {
             method: 'POST',
