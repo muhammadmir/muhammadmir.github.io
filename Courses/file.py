@@ -9,6 +9,14 @@ from flask import Flask
 from flask_caching import Cache
 from flask_cors import CORS
 import asyncio
+import logging
+
+logging.basicConfig(
+    filename = 'Logs.log',
+    encoding = 'UTF-8',
+    format = '=' * 150 + '\n%(name)s: %(asctime)s | %(levelname)s | Line: %(lineno)s |  %(message)s\n' + '=' * 150 + '\n',
+    datefmt = '%Y-%m-%dT%H:%M:%SZ',
+)
 disable_warnings()
 
 app = Flask(__name__)
@@ -17,10 +25,7 @@ cache = Cache(app)
 CORS(app)
 
 # https://drew.edu/registrars-office/about-us/facultystaff/course-attribute-overview/
-
-from os import getcwd
-print(getcwd())
-with open('mappings.json', 'r', encoding='UTF-8') as f: SUBJECT_MAPPING = loads(f.read())
+with open('mappings.json', 'r', encoding = 'UTF-8') as f: SUBJECT_MAPPING = loads(f.read())
 ALL = {
     'Subjects': [],
     'Abbreviations': [],
@@ -43,6 +48,7 @@ class Schedules():
         self.desc_uris = []
     
     def _authenticate(self) -> None:
+        logger = logging.getLogger('_authenticate')
         with Client(follow_redirects=True, verify=False, timeout=30) as session:
             try:
                 first_headers = {
@@ -98,10 +104,10 @@ class Schedules():
                                         fourth_response = session.post('https://cas.drew.edu' + uri, headers=fourth_headers, data=fourth_data)
                                         if '>Sign Out<' in fourth_response.text:
                                             self.valid = True
-                                    except Exception as e: raise Exception(f"Error: {e}")
-                            except Exception as e: raise Exception(f"Error: {e}")
-                    except Exception as e: raise Exception(f"Error: {e}")
-            except Exception as e: raise Exception(f"Error: {e}")
+                                    except Exception as e: logger.exception(f'4th Request | {type(e)} | {e}')
+                            except Exception as e: logger.exception(f'3rd Request | {type(e)} | {e}')
+                    except Exception as e: logger.exception(f'2nd Request| {type(e)} | {e}')
+            except Exception as e: logger.exception(f'1st Request | {type(e)} | {e}')
     
     def _reset_uris(self) -> None:
         self.number_and_stuff_uri = []
@@ -147,8 +153,7 @@ class Schedules():
     def _format_days(self, days: str) -> list[dict]:
         final_days = []
         
-        # had a case where day was "\u00a0", need to handle
-        if days == 'TBA': # Sloppy way to handle this, for the case when no Meeting times are defined
+        if days not in ['M', 'T', 'W', 'R', 'F', 'S']: # If TBA or something else
             try: day_dict = next(item for item in ALL['Days'] if item["Name"] == days) #Get Dict by looking up with Name Key
             except Exception as e:
                 day_dict = {'ID': len(ALL['Days']) + 1, 'Name': days}
@@ -224,19 +229,21 @@ class Schedules():
     
     def _update_mappings(self, mappings: dict) -> None:
         global SUBJECT_MAPPING
+        logger = logging.getLogger('_update_mappings')
         update = False
         
         for key, value in mappings.items():
             if key not in SUBJECT_MAPPING:
                 update = True
                 SUBJECT_MAPPING[key] = value
-                print(f'Added {key} --> {value}')
+                logger.debug(f'Added {key} --> {value}')
         
         if update:
             SUBJECT_MAPPING = dict(sorted(SUBJECT_MAPPING.items(), key = lambda x : x[1]))
             with open('mappings.json', 'w', encoding='UTF-8') as f: f.write(dumps(SUBJECT_MAPPING, indent=4))
      
     def _parse_courses(self, rows: list) -> list[dict]:
+        logger = logging.getLogger('_parse_courses')
         rows = iter(rows)
         
         courses = []
@@ -316,103 +323,11 @@ class Schedules():
                             
                     courses.append(course)
             except StopIteration: break
-            except Exception as e:
-                print(e, 'Parsing Course')
-                print(row)
-                print(course)
-                quit(0)
+            except Exception as e: logger.exception(f'{type(e)} | {e}\nRow: {row}\nCourse: {course}')
         return courses
 
-    def get_courses(self, all_calanders: bool = False) -> list[dict]:
-        with Client(base_url='https://selfservice.drew.edu', verify=False, timeout=60) as session:
-            try:
-                first_headers = {
-                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                    'Accept-Language': 'en-US,en;q=0.9',
-                    'Accept-Encoding': 'gzip, deflate, br',
-                    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.1 Safari/605.1.15'
-                    }
-                first_response = session.get('/prod/bwckschd.p_disp_dyn_sched', headers=first_headers)
-                if '>Dynamic Schedule<' in first_response.text:
-                    calanders = []
-                    cal_ids = findall(r'(?<=OPTION VALUE=")(\d\d.*?)(?=")', first_response.text)
-                    cal_names = findall(r'(?<=\d\d"\>)(.*?)(?=\<)', first_response.text)
-                    for cal_id, cal_name in zip(cal_ids, cal_names): calanders.append({'Calander ID': cal_id, 'Calander Name': cal_name.replace(' (View only)', ''), 'Processing Time': 0, 'Courses': []})
-
-                    if not all_calanders: calanders = [calanders[0]]
-                    
-                    for calander in calanders:
-                        start_time = time()
-                        try:
-                            second_headers = {
-                                'Content-Type': 'application/x-www-form-urlencoded',
-                                'Origin': 'https://selfservice.drew.edu',
-                                'Accept-Encoding': 'gzip, deflate, br',
-                                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.1 Safari/605.1.15',
-                                'Referer': 'https://selfservice.drew.edu/prod/bwckschd.p_disp_dyn_sched',
-                                'Accept-Language': 'en-US,en;q=0.9'
-                                }
-                            second_data = {'p_calling_proc': 'bwckschd.p_disp_dyn_sched', 'p_term': calander['Calander ID'], 'p_by_date': 'Y', 'p_from_date': '', 'p_to_date': ''}
-
-                            second_response = session.post('/prod/bwckgens.p_proc_term_date', headers=second_headers, data=second_data)
-                            if '>Class Schedule Search</' in second_response.text:
-                                source = second_response.text.strip().replace('\n', '')
-                                
-                                subset = findall(r'(?<=subj_id"\>)(.*?)(?=\<\/select)', source)[0]
-                                mappings = {item.split('">')[0]: item.split('">')[1] for item in findall(r'(?<=OPTION VALUE=")(.*?)(?=\<)', subset)}
-                                self._update_mappings(mappings)
-                                                                
-                                terms_one = [term.replace('" value="', '=') for term in findall(r'(?<="hidden" name=")(.*?)(?=" /)', source)]
-                                terms_two = [f'sel_subj={course}' for course in findall(r'(?<=OPTION VALUE\=")(.*?)(?=")', subset)]
-                                terms_three = [f'{term}=' for term in findall(r'(?<=input type\="text" name\=")(.*?)(?=")', source)]
-                                terms_four = [f'{a}={b}' for a, b in zip(findall(r'(?<=select name\=")(.*?)(?=")', source)[1:], findall(r'(?<="\>\<OPTION VALUE\=")(.*?)(?=")', source)[1:])]
-                                
-                                third_data = '&'.join(terms_one + terms_two + terms_three + terms_four)
-                                third_data = third_data.replace('%', '%25')
-                                
-                                try:  
-                                    second_headers['Referer'] = 'https://selfservice.drew.edu/prod/bwckgens.p_proc_term_date'
-                                    third_response = session.post('/prod/bwckschd.p_get_crse_unsec', headers=second_headers, data=third_data)
-                                    
-                                    if 'Class Schedule Listing<' in third_response.text:
-                                        second_headers['Referer'] = 'https://selfservice.drew.edu/prod/bwckschd.p_get_crse_unsec'
-                                        soup = BeautifulSoup(third_response.content, features='html.parser')
-                                        
-                                        table = soup.find('table', class_='datadisplaytable')
-                                        rows = table.find_all('tr')
-                                        
-                                        courses = self._parse_courses(rows)
-                                        asyncio.run(self._visit_uris(second_headers))
-                                                                                
-                                        for course, num_and_stuff, desc in zip(courses, self.number_and_stuff_uri, self.desc_uris): # Unpacking
-                                            course['Capacity'] = num_and_stuff['Capacity']
-                                            course['Registered'] = num_and_stuff['Registered']
-                                            course['Remaining'] = num_and_stuff['Remaining']
-                                            course['Waitlisted'] = num_and_stuff['Waitlisted']
-                                            
-                                            stuff = num_and_stuff['Stuff']
-
-                                            course['Prerequisites'] = stuff['Prerequisites']
-                                            course['Corequisites'] = stuff['Corequisites']
-                                            course['Mutual Exclusions'] = stuff['Mutual Exclusions']
-                                            course['Cross List Courses'] = stuff['Cross List Courses']
-                                            course['Restrictions'] = stuff['Restrictions']
-                                            
-                                            course['Description'] = desc                                            
-                                        
-                                        calander['Processing Time'] = round(time() - start_time)
-                                        calander['Courses'] = courses  
-                                        self._reset_uris()
-                                        
-                                        print(f'Done Calander {calander["Calander Name"]} in {calander["Processing Time"]}')
-                                except Exception as e: print('Getting Courses', e, calander)
-                        except Exception as e: print('Getting Course Search Options', e, calander) 
-                    return calanders
-                    # with open('table.json', 'w', encoding='UTF-8') as f: f.write(dumps(calanders, indent=4))
-            except Exception as e: print('Dynamic Schedule Page', e)
-    
     def _parse_extra_course_info(self, source: str) -> list:
+        logger = logging.getLogger('_parse_extra_course_info')
         source = sub(r'<a href="([^"]*)">(.*?)</a>', r'\2', source).replace('\n', '').replace('&nbsp;', '')
         
         no_needs = ['Search', 'Associated Term:', 'Capacity', 'Actual', 'Remaining', 'Seats', 'Waitlist Seats', 'Cross List Seats']
@@ -423,7 +338,7 @@ class Schedules():
         stuff = {'Prerequisites': None, 'Corequisites': None, 'Mutual Exclusions': None, 'Cross List Courses': None, 'Restrictions': None}
                 
         for field in fields:
-            if field not in ['Prerequisites:', 'Corequisites:', 'Mutual Exclusions:', 'Mutual Exclusion:', 'Cross List Courses:', 'Restrictions:']: print('New field: ', field)
+            if field not in ['Prerequisites:', 'Corequisites:', 'Mutual Exclusions:', 'Mutual Exclusion:', 'Cross List Courses:', 'Restrictions:']: logger.debug(f'New Field: {field}')
             else:
                 sub_parse = findall(r'(?<=' + field + r')(.*?)(?=\<SPAN|\<\/TD)', source)[0]
                 items = [item.strip() for item in findall(r'(?<=<br />)(.*?)(?=<br />)', sub_parse) if len(item.strip()) > 0 and item.strip() != '<br />'] # Remove empty items
@@ -450,10 +365,105 @@ class Schedules():
                     
                     new_items.append(req)
                     stuff['Restrictions'] = new_items
-
         return stuff           
     
+    def get_calanders(self, all_calanders: bool = False) -> list[dict]:
+        logger = logging.getLogger('get_calanders')
+        with Client(base_url='https://selfservice.drew.edu', verify=False, timeout=60) as session:
+            try:
+                first_headers = {
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                    'Accept-Language': 'en-US,en;q=0.9',
+                    'Accept-Encoding': 'gzip, deflate, br',
+                    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.1 Safari/605.1.15'
+                    }
+                first_response = session.get('/prod/bwckschd.p_disp_dyn_sched', headers=first_headers)
+                if '>Dynamic Schedule<' in first_response.text:
+                    
+                    calanders = []
+                    cal_ids = findall(r'(?<=OPTION VALUE=")(\d\d.*?)(?=")', first_response.text)
+                    cal_names = findall(r'(?<=\d\d"\>)(.*?)(?=\<)', first_response.text)
+                    for cal_id, cal_name in zip(cal_ids, cal_names): calanders.append({'Calander ID': cal_id, 'Calander Name': cal_name.replace(' (View only)', ''), 'Processing Time': 0, 'Courses': []})
+
+                    if not all_calanders: calanders = [calanders[0]]
+                    
+                    return calanders
+            except Exception as e: logger.exception(f'{type(e)} | {e}')
+    
+    def get_courses(self, calanders: list[dict]) -> list[dict]:
+        logger = logging.getLogger('get_courses')
+        with Client(base_url='https://selfservice.drew.edu', verify=False, timeout=60) as session:
+            for calander in calanders:
+                start_time = time()
+                
+                try:
+                    first_headers = {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'Origin': 'https://selfservice.drew.edu',
+                        'Accept-Encoding': 'gzip, deflate, br',
+                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.1 Safari/605.1.15',
+                        'Referer': 'https://selfservice.drew.edu/prod/bwckschd.p_disp_dyn_sched',
+                        'Accept-Language': 'en-US,en;q=0.9'
+                        }
+                    first_data = {'p_calling_proc': 'bwckschd.p_disp_dyn_sched', 'p_term': calander['Calander ID'], 'p_by_date': 'Y', 'p_from_date': '', 'p_to_date': ''}
+                    first_response = session.post('/prod/bwckgens.p_proc_term_date', headers=first_headers, data=first_data)
+                    if '>Class Schedule Search</' in first_response.text:
+                        source = first_response.text.strip().replace('\n', '')
+                        
+                        subset = findall(r'(?<=subj_id"\>)(.*?)(?=\<\/select)', source)[0]
+                        mappings = {item.split('">')[0]: item.split('">')[1] for item in findall(r'(?<=OPTION VALUE=")(.*?)(?=\<)', subset)}
+                        self._update_mappings(mappings)
+                                                        
+                        terms_one = [term.replace('" value="', '=') for term in findall(r'(?<="hidden" name=")(.*?)(?=" /)', source)]
+                        terms_two = [f'sel_subj={course}' for course in findall(r'(?<=OPTION VALUE\=")(.*?)(?=")', subset)]
+                        terms_three = [f'{term}=' for term in findall(r'(?<=input type\="text" name\=")(.*?)(?=")', source)]
+                        terms_four = [f'{a}={b}' for a, b in zip(findall(r'(?<=select name\=")(.*?)(?=")', source)[1:], findall(r'(?<="\>\<OPTION VALUE\=")(.*?)(?=")', source)[1:])]
+                        
+                        second_data = '&'.join(terms_one + terms_two + terms_three + terms_four).replace('%', '%25')
+                        
+                        try:  
+                            first_headers['Referer'] = 'https://selfservice.drew.edu/prod/bwckgens.p_proc_term_date'
+                            second_response = session.post('/prod/bwckschd.p_get_crse_unsec', headers=first_headers, data=second_data)
+                            
+                            if 'Class Schedule Listing<' in second_response.text:
+                                first_headers['Referer'] = 'https://selfservice.drew.edu/prod/bwckschd.p_get_crse_unsec'
+                                soup = BeautifulSoup(second_response.content, features='html.parser')
+                                
+                                table = soup.find('table', class_='datadisplaytable')
+                                rows = table.find_all('tr')
+                                
+                                courses = self._parse_courses(rows)
+                                asyncio.run(self._visit_uris(first_headers))
+                                                                        
+                                for course, num_and_stuff, desc in zip(courses, self.number_and_stuff_uri, self.desc_uris): # Unpacking
+                                    course['Capacity'] = num_and_stuff['Capacity']
+                                    course['Registered'] = num_and_stuff['Registered']
+                                    course['Remaining'] = num_and_stuff['Remaining']
+                                    course['Waitlisted'] = num_and_stuff['Waitlisted']
+                                    
+                                    stuff = num_and_stuff['Stuff']
+                                    
+                                    course['Prerequisites'] = stuff['Prerequisites']
+                                    course['Corequisites'] = stuff['Corequisites']
+                                    course['Mutual Exclusions'] = stuff['Mutual Exclusions']
+                                    course['Cross List Courses'] = stuff['Cross List Courses']
+                                    course['Restrictions'] = stuff['Restrictions']
+                                    
+                                    course['Description'] = desc                                            
+                                
+                                calander['Processing Time'] = round(time() - start_time)
+                                calander['Courses'] = courses  
+                                self._reset_uris()
+                                
+                                print(f'Done Calander {calander["Calander Name"]} in {calander["Processing Time"]}')
+                        except Exception as e: logger.exception(f'Getting Courses | {type(e)} | {e}\nCalander: {calander}')
+                except Exception as e: logger.exception(f'Getting Mappings | {type(e)} | {e}\nCalander: {calander}')
+            return calanders
+            # with open('table.json', 'w', encoding='UTF-8') as f: f.write(dumps(calanders, indent=4))
+
     async def _visit_uris(self, second_headers: dict) -> None:
+        logger = logging.getLogger('_visit_uris')
         async with AsyncClient(base_url='https://selfservice.drew.edu', verify=False, timeout=60) as async_session:
             try:
                 tasks = [self._get_desc(async_session, second_headers, number_uri) for number_uri in self.desc_uris]
@@ -461,10 +471,10 @@ class Schedules():
                 
                 tasks = [self._get_numbers_and_stuff(async_session, second_headers, number_uri) for number_uri in self.number_and_stuff_uri]
                 self.number_and_stuff_uri = await asyncio.gather(*tasks)
-            except Exception as e:
-                print('Visiting URIs', e)
+            except Exception as e: logger.exception(f'{type(e)} | {e}')
     
     async def _get_desc(self, session: AsyncClient, headers: dict, uri: str) -> str:
+        logger = logging.getLogger('_get_desc')
         try:
             a = await session.get(uri, headers=headers)
             if '>Catalog Entries<' in a.text:
@@ -472,10 +482,11 @@ class Schedules():
                 selection = soup.find('td', class_='ntdefault')
                 
                 return findall(r'(?<=class="ntdefault"\>)(.*?)(?=\<)', str(selection).replace('\n', ''))[0].strip()
-        except Exception as e: print('Getting Description', e, type(e))
+        except Exception as e: logger.exception(f'{type(e)} | {e}')
         return ''
     
     async def _get_numbers_and_stuff(self, session: AsyncClient, headers: dict, uri: str) -> dict:
+        logger = logging.getLogger('_get_numbers_and_stuff')
         try:
             a = await session.get(uri, headers=headers)
             if '>Detailed Class Information<' in a.text:
@@ -492,14 +503,16 @@ class Schedules():
                 stuff = self._parse_extra_course_info(a.text)
                             
                 return {'Capacity': int(seats[0].text), 'Registered': int(seats[1].text), 'Remaining': int(seats[2].text), 'Waitlisted': int(waitlisted[1].text), 'Stuff': stuff}             
-        except Exception as e: print('Getting Numbers', e, type(e))
+        except Exception as e: logger.exception(f'{type(e)} | {e}')
+        
         stuff = {'Prerequisites': None, 'Corequisites': None, 'Mutual Exclusions': None, 'Cross List Courses': None, 'Restrictions': None}
         return {'Capacity': 0, 'Registered': 0, 'Remaining': 0, 'Waitlisted': 0, 'Stuff': stuff}
     
 @app.route('/get_courses', methods=['GET'])
 @cache.cached(timeout=60 * 10)
 def handle_request():
-    return schedule.get_courses(all_calanders = False)
+    calanders = schedule.get_calanders(all_calanders = False)
+    return schedule.get_courses(calanders = calanders)
 
 schedule = Schedules()
 app.run(host='0.0.0.0', debug=True, port=8080)
