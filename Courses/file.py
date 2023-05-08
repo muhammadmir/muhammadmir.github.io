@@ -153,7 +153,9 @@ class Schedules():
     def _format_days(self, days: str) -> list[dict]:
         final_days = []
         
-        if days not in ['M', 'T', 'W', 'R', 'F', 'S']: # If TBA or something else
+        if len(days.strip()) < 1: days = 'TBA' # Cases when no days are defined, which is weird?
+        
+        if not all([True if day in ['M', 'T', 'W', 'R', 'F', 'S'] else False for day in days]): # If TBA or something else
             try: day_dict = next(item for item in ALL['Days'] if item["Name"] == days) #Get Dict by looking up with Name Key
             except Exception as e:
                 day_dict = {'ID': len(ALL['Days']) + 1, 'Name': days}
