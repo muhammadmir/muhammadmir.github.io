@@ -46,7 +46,7 @@
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(calanders)
+            body: JSON.stringify(field1.selectedOptions)
         }).json();
 
         if ('Error' in response) alert('Error from server: ' + response['Error']);
