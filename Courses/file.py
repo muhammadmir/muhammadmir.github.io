@@ -511,7 +511,7 @@ class Schedules():
         return {'Capacity': 0, 'Registered': 0, 'Remaining': 0, 'Waitlisted': 0, 'Stuff': stuff}
 
 def is_valid_request(calanders: list):
-    required_keys = ['Calander ID', 'Calander Name']
+    required_keys = ['Calander ID', 'Calander Name', 'Processing Time', 'Courses']
     valid_request = True
     for calander in calanders:
         if type(calander) is not dict: valid_request = False
