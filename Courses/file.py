@@ -520,13 +520,13 @@ def is_valid_request(calanders: list):
     return valid_request        
 
 @app.route('/get_calanders', methods=['GET'])
-@cache.cached(timeout = 60 * 10)
+#@cache.cached(timeout = 60 * 10)
 def handle_calander():
     calanders = schedule.get_calanders(all_calanders = True)
     return calanders
 
 @app.route('/get_courses', methods=['POST'])
-@cache.cached(timeout=60 * 10)
+#@cache.cached(timeout=60 * 10)
 def handle_courses():
     calanders = request.get_json()
     
