@@ -30,10 +30,8 @@
     </select>
 
     <br><br>
-    <form action='/Courses/main.html' class='inline'>
-        <button id='button' class="btn btn-light" action>Get Courses</button>
-    </form>
 
+    <button id='button' class="btn btn-light" action>Get Courses</button>
 </body>
 
 <script>
@@ -47,32 +45,43 @@
                     'Processing Time': 0,
                     'Courses': []
                 }
-            )
+            );
         }
         );
 
-        return JSON.stringify(calanders)
+        return JSON.stringify(calanders);
     }
 
-    document.getElementById('button').onclick = function () {
-        document.getElementById('button').value = 'Fetching courses...';
+    document.getElementById('button').addEventListener('click', () => {
+        sessionStorage.removeItem('Courses');
+        document.getElementById('button').textContent = 'Fetching courses...';
 
-        const response = fetch('https://courses-server.muhammadmir1.repl.co/get_courses', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: formatOptions(field1.selectedOptions)
-        }).json();
+        try {
+            fetch('https://courses-server.muhammadmir1.repl.co/get_courses', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                },
+                body: formatOptions(field1.selectedOptions)
+            }).then(response => response.json()).then(response => {
+                if ('Error' in response) alert('Error from server: ' + response['Error']);
+                else {
+                    sessionStorage.setItem('Courses', JSON.stringify(response));
+                    window.location.href = '/Courses/main.html';
+                }
+            });
+        } catch (error) {
+            alert('Error in request. Check console log.');
+            console.log(error);
+        }
 
-        if ('Error' in response) alert('Error from server: ' + response['Error']);
-        else localStorage['Courses'] = response
-    };
+    });
 
     fetch('https://courses-server.muhammadmir1.repl.co/get_calanders').then(obj => obj.json()).then(obj => {
         field1.innerHTML = obj.map(x => '<option value=' + x['Calander ID'] + '>' + x['Calander Name'] + '</option>');
         field1.loadOptions();
-    })
+    });
 </script>
 
 </html>

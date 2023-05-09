@@ -100,14 +100,10 @@ function format(course) {
     );
 }
 
-$(document).ready(function () {
+
+$(document).ready(function () {    
     var table = $('#courses').DataTable({
-        ajax: {
-            data: localStorage['Courses'],
-            dataSrc: function (data) {
-                return data[0].Courses
-            }
-        },
+        data: JSON.parse(sessionStorage['Courses'])[0]['Courses'],
         dom: 'Pfrtip',
         searchPanes: {
             cascadePanes: true
@@ -121,7 +117,7 @@ $(document).ready(function () {
                 searchPanes: {
                     show: false
                 },
-                targets: [1, 2, 4, 6, 7, 8, 10, 11, 12]
+                targets: [1, 2, 4, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16, 17]
             },
             {
                 searchPanes: {
@@ -185,7 +181,7 @@ $(document).ready(function () {
             }
         ],
         columns: [
-            {
+            { // 0
                 className: 'dt-control',
                 orderable: true,
                 data: null,
@@ -194,7 +190,7 @@ $(document).ready(function () {
             {
                 data: 'CRN',
             },
-            {
+            { // 2
                 data: 'Section',
             },
             {
@@ -203,7 +199,7 @@ $(document).ready(function () {
                     _: 'Name',
                 },
             },
-            {
+            { // 4
                 data: 'Abbreviation',
                 render: {
                     _: 'Name',
@@ -212,43 +208,43 @@ $(document).ready(function () {
             {
                 data: 'Level',
             },
-            {
+            { // 6
                 data: 'Name',
             },
             {
                 data: 'Description',
             },
-            {
+            { // 8
                 data: 'Credits',
             },
             {
                 data: 'Capacity',
             },
-            {
+            { // 10
                 data: 'Registered',
             },
             {
                 data: 'Remaining',
             },
-            {
+            { // 12
                 data: 'Waitlisted',
             },
-            { // 13
+            {
                 data: 'Prerequisites',
             },
-            {
+            { // 14
                 data: 'Corequisites',
             },
             {
                 data: 'Mutual Exclusions',
             },
-            {
+            { // 16
                 data: 'Cross List Courses',
             },
             {
                 data: 'Restrictions',
             },
-            { // 17
+            { // 18
                 data: 'Attributes',
                 render: {
                     sp: '[].Name'
@@ -266,7 +262,7 @@ $(document).ready(function () {
                     orthogonal: 'sp'
                 }
             },
-            {
+            { // 20
                 data: 'Properties',
                 render: {
                     sp: '[].Time.Name'
@@ -284,7 +280,7 @@ $(document).ready(function () {
                     orthogonal: 'sp'
                 }
             },
-            {
+            { // 22
                 data: 'Properties',
                 render: {
                     sp: '[].Location.Name'
@@ -302,7 +298,7 @@ $(document).ready(function () {
                     orthogonal: 'sp'
                 }
             },
-            {
+            { // 24
                 data: 'Properties.0.Instructors',
                 render: {
                     sp: '[].Name'
@@ -330,6 +326,6 @@ $(document).ready(function () {
         }
     });
 
-    document.getElementById('calander_name') = 'Calander: ' + localStorage['Calander Name'];
+    document.getElementById('calander_name').textContent = 'Calander: ' + JSON.parse(sessionStorage['Courses'])[0]['Calander Name'];
 });
 
