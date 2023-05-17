@@ -55,3 +55,4 @@ To replicate and host yourself:
 ## Todo List
 1. Front-end updates
 2. Download courses selected after filtraton
+3. Fix the SearchPanes search panels not showing proper text?
