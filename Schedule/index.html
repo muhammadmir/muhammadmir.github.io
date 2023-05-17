@@ -113,7 +113,7 @@
 
             get_courses().then((courses => {
                 sessionStorage.setItem('Courses', JSON.stringify(courses));
-                window.location.href = '/Courses/main.html';
+                window.location.href = '/Schedule/main.html';
             })).catch((error) => console.log(error));
         }
     });

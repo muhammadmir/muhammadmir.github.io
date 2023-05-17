@@ -2,5 +2,5 @@
 
 ## Navigation
 
-1. [Treehouse Courses](https://muhammadmir.github.io/Courses/)
+1. [Schedule Project](https://muhammadmir.github.io/Schedule/)
 

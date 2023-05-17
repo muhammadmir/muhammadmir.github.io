@@ -1,4 +1,4 @@
-# Treehouse Courses
+# Schedule Project
 An easier way to search and filter courses by various properties.
 
 ---
@@ -23,7 +23,7 @@ It's important to know there are two version of the Dynamic Schedule, and I chos
 ---
 
 ## Usage
-To see a live version, click [here](https://muhammadmir.github.io/Courses/).
+To see a live version, click [here](https://muhammadmir.github.io/Schedule/).
 
 ---
 
@@ -46,7 +46,7 @@ Because my initial goal of the project, parsing the data neatly and effectively 
 
 ## Replication
 To replicate and host yourself:
-1. Make a copy of `Courses` folder
+1. Make a copy of `Schedule` folder
 2. Run `file.py` on a server
 3. Edit `index.html` with link to server
 
