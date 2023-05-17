@@ -25,16 +25,36 @@
     <h1>Please Select Calander(s)</h1>
     <label>Calander(s): </label>
 
-    <select name='field1' id='field1' multiple multiselect-search='true' multiselect-select-all='false'
-        multiselect-max-items='1' multiselect-hide-x='false'>
+    <select name='field1' id='field1' multiple multiselect-search='true' multiselect-select-all='true'
+        multiselect-max-items='100' multiselect-hide-x='false'>
     </select>
 
     <br><br>
 
-    <button id='button' class="btn btn-light" action>Get Courses</button>
+    <button id='viewCoursesButton' class="btn btn-light" action>View Courses</button>
+    <button id='downloadCoursesButton' class="btn btn-light" action>Download Courses</button>
 </body>
 
 <script>
+    // https://stackoverflow.com/a/65939108
+    const saveFileAsJson = (filename, dataObjToWrite) => {
+        const blob = new Blob([JSON.stringify(dataObjToWrite)], { type: "text/json" });
+        const link = document.createElement("a");
+
+        link.download = filename;
+        link.href = window.URL.createObjectURL(blob);
+        link.dataset.downloadurl = ["text/json", link.download, link.href].join(":");
+
+        const evt = new MouseEvent("click", {
+            view: window,
+            bubbles: true,
+            cancelable: true,
+        });
+
+        link.dispatchEvent(evt);
+        link.remove()
+    };
+
     function formatOptions(options) {
         let calanders = []
         Array.from(options).forEach(function (calander) {
@@ -52,30 +72,50 @@
         return JSON.stringify(calanders);
     }
 
-    document.getElementById('button').addEventListener('click', () => {
+    function get_courses() {
+        return new Promise((resolve, reject) => {
+            try {
+                fetch('https://courses-server.muhammadmir1.repl.co/get_courses', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                    },
+                    body: formatOptions(field1.selectedOptions)
+                }).then(response => response.json()).then(response => {
+                    if ('Error' in response) {
+                        alert('Error from server. Check console log.');
+                        reject(response['Error']);
+                    }
+                    else resolve(response);
+                });
+            } catch (error) {
+                alert('Error in request. Check console log.');
+                reject(error);
+            }
+        });
+    }
+    
+    document.getElementById('downloadCoursesButton').addEventListener('click', () => {
+        document.getElementById('downloadCoursesButton').textContent = 'Downloading courses...';
+
+        get_courses().then((courses => {
+            saveFileAsJson('Courses.json', courses);
+        })).catch((error) => console.log(error));
+    });
+
+    document.getElementById('viewCoursesButton').addEventListener('click', () => {
         sessionStorage.removeItem('Courses');
-        document.getElementById('button').textContent = 'Fetching courses...';
 
-        try {
-            fetch('https://courses-server.muhammadmir1.repl.co/get_courses', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                },
-                body: formatOptions(field1.selectedOptions)
-            }).then(response => response.json()).then(response => {
-                if ('Error' in response) alert('Error from server: ' + response['Error']);
-                else {
-                    sessionStorage.setItem('Courses', JSON.stringify(response));
-                    window.location.href = '/Courses/main.html';
-                }
-            });
-        } catch (error) {
-            alert('Error in request. Check console log.');
-            console.log(error);
+        if (field1.selectedOptions.length != 1) alert('At this moment, you may only select one calander to view the course information.');
+        else {
+            document.getElementById('viewCoursesButton').textContent = 'Fetching courses...';
+
+            get_courses().then((courses => {
+                sessionStorage.setItem('Courses', JSON.stringify(courses));
+                window.location.href = '/Courses/main.html';
+            })).catch((error) => console.log(error));
         }
-
     });
 
     fetch('https://courses-server.muhammadmir1.repl.co/get_calanders').then(obj => obj.json()).then(obj => {

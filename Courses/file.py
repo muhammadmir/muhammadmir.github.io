@@ -39,7 +39,7 @@ ALL = {
     'Attributes': []
 }
 
-class Schedules():
+class Schedule():
     def __init__(self, username: Optional[str] = None, password: Optional[str] = None) -> None:
         self.username = username
         self.password = password
@@ -523,7 +523,7 @@ def is_valid_request(calanders: list):
 #@cache.cached(timeout = 60 * 10)
 def handle_calander():
     calanders = schedule.get_calanders(all_calanders = True)
-    return calanders
+    return jsonify(calanders)
 
 @app.route('/get_courses', methods=['POST'])
 #@cache.cached(timeout=60 * 10)
@@ -532,9 +532,8 @@ def handle_courses():
     
     if type(calanders) is not list: return jsonify({'Error': 'Content sent was not JSON.'})
     elif not is_valid_request(calanders): return jsonify({'Error': 'Missing required keys.'})
-    elif len(calanders) != 1: return jsonify({'Error': 'Only one calanader can be selected.'})
     else: return jsonify(schedule.get_courses(calanders = calanders))
 
 
-schedule = Schedules()
+schedule = Schedule()
 app.run(host='0.0.0.0', debug=True, port=8080)
