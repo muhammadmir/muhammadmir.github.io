@@ -31,9 +31,7 @@ To see a live version, click [here](https://muhammadmir.github.io/Schedule/).
 There are two main benefits:
 
 ### Searching and Filtering
-The regular interface is limited. You can make a query with multiple filters. For example, you can select multiple subjects, instructors, and attributes. However, the logic is **OR**, not **AND**. So, if you wanted to know which two or more attributes are applied to the same course, you cannot know and you must tediously CTRL+F to find such a course that does have that.
-
-Additionally, as you select properties, the unavaialable properties do not collapse. You must submit the query and then it will tell you whether or not courses with those condition exist, and if they don't, you have to go back the page, reload it, and re-select. Furthemore, you have to click on an extra link just to get information like the course description or pre-requsities. And, depending on the Dynamic Schedule, there is another link to visit just to see how many people have registered or waitlisted.
+The regular interface is limited. You can make a query with multiple filters. For example, you can select multiple subjects, instructors, and attributes. However, the logic is **OR**, not **AND**. So, if you wanted to know which two or more attributes are applied to the same course, you cannot know without tedious searching. Additionally, as you select properties, the unavaialable properties do not collapse. You must submit the query and then it will tell you whether or not courses with those condition exist, and if they don't, you have to go back the page, reload it, and re-select. Furthemore, you have to click on an extra link just to get information like the course description or pre-requsities. And, depending on the Dynamic Schedule, there is another link to visit just to see how many people have registered or waitlisted.
 
 Along with some additional tweaks, I refined the way to view course properties so it is more useful.
 
@@ -54,5 +52,3 @@ To replicate and host yourself:
 
 ## Todo List
 1. Front-end updates
-2. Download courses selected after filtraton
-3. Fix the SearchPanes search panels not showing proper text?

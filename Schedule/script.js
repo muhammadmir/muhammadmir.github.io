@@ -100,13 +100,31 @@ function format(course) {
     );
 }
 
+// https://stackoverflow.com/a/65939108
+const saveFileAsJson = (filename, dataObjToWrite) => {
+    const blob = new Blob([JSON.stringify(dataObjToWrite)], { type: "text/json" });
+    const link = document.createElement("a");
 
-$(document).ready(function () {    
-    var table = $('#courses').DataTable({
+    link.download = filename;
+    link.href = window.URL.createObjectURL(blob);
+    link.dataset.downloadurl = ["text/json", link.download, link.href].join(":");
+
+    const evt = new MouseEvent("click", {
+        view: window,
+        bubbles: true,
+        cancelable: true,
+    });
+
+    link.dispatchEvent(evt);
+    link.remove()
+};
+
+function createTable() {
+    return $('#courses').DataTable({
         data: JSON.parse(sessionStorage['Courses'])[0]['Courses'],
         dom: 'Pfrtip',
         searchPanes: {
-            cascadePanes: true
+            cascadePanes: true,
         },
         columnDefs: [
             {
@@ -115,9 +133,16 @@ $(document).ready(function () {
             },
             {
                 searchPanes: {
+                    show: true,
+                    combiner: sessionStorage['Pane Logic'].toLowerCase()
+                },
+                targets: [3, 18, 19, 20, 21, 22, 23, 24]
+            },
+            {
+                searchPanes: {
                     show: false
                 },
-                targets: [1, 2, 4, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16, 17]
+                targets: [2, 4, 6, 6, 7, 8, 10, 11, 12]
             },
             {
                 searchPanes: {
@@ -150,7 +175,8 @@ $(document).ready(function () {
                                 return courseLevel >= 500 && courseLevel <= 999
                             }
                         }
-                    ]
+                    ],
+                    combiner: sessionStorage['Pane Logic'].toLowerCase()
                 },
                 targets: [5]
             },
@@ -175,7 +201,8 @@ $(document).ready(function () {
                                 return rowData.Waitlisted > 0
                             }
                         }
-                    ]
+                    ],
+                    combiner: sessionStorage['Pane Logic'].toLowerCase()
                 },
                 targets: [9]
             }
@@ -250,6 +277,7 @@ $(document).ready(function () {
                     sp: '[].Name'
                 },
                 searchPanes: {
+                    header: 'Attribute',
                     orthogonal: 'sp',
                 }
             },
@@ -259,6 +287,7 @@ $(document).ready(function () {
                     sp: '[].Type.Name'
                 },
                 searchPanes: {
+                    header: 'Type',
                     orthogonal: 'sp'
                 }
             },
@@ -268,6 +297,7 @@ $(document).ready(function () {
                     sp: '[].Time.Name'
                 },
                 searchPanes: {
+                    header: 'Time',
                     orthogonal: 'sp'
                 }
             },
@@ -277,6 +307,7 @@ $(document).ready(function () {
                     sp: '[].Name'
                 },
                 searchPanes: {
+                    header: 'Day',
                     orthogonal: 'sp'
                 }
             },
@@ -286,6 +317,7 @@ $(document).ready(function () {
                     sp: '[].Location.Name'
                 },
                 searchPanes: {
+                    header: 'Location',
                     orthogonal: 'sp'
                 }
             },
@@ -295,6 +327,7 @@ $(document).ready(function () {
                     sp: '[].Nature.Name'
                 },
                 searchPanes: {
+                    header: 'Nature',
                     orthogonal: 'sp'
                 }
             },
@@ -304,12 +337,20 @@ $(document).ready(function () {
                     sp: '[].Name'
                 },
                 searchPanes: {
+                    header: 'Instructor',
                     orthogonal: 'sp'
                 }
             }
         ],
     });
+}
 
+sessionStorage['Pane Logic'] = sessionStorage['Pane Logic'] == undefined ? 'OR' : sessionStorage['Pane Logic'];
+
+$(document).ready(function () {
+    document.getElementById('paneLogic').textContent = 'Logic: ' + sessionStorage['Pane Logic'];
+    let table = createTable();
+    
     // Add event listener for opening and closing details
     $('#courses tbody').on('click', 'td.dt-control', function () {
         var tr = $(this).closest('tr');
@@ -326,6 +367,19 @@ $(document).ready(function () {
         }
     });
 
-    document.getElementById('calander_name').textContent = 'Calander: ' + JSON.parse(sessionStorage['Courses'])[0]['Calander Name'];
+    document.getElementById('calanderName').textContent = 'Calander: ' + JSON.parse(sessionStorage['Courses'])[0]['Calander Name'];
+
+    document.getElementById('paneLogic').addEventListener('click', () => {
+        sessionStorage['Pane Logic'] = sessionStorage['Pane Logic'] == 'OR' ? 'AND' : 'OR';
+        console.log(sessionStorage['Pane Logic']);
+
+        document.getElementById('paneLogic').textContent = 'Logic: ' + sessionStorage['Pane Logic'];
+        location.reload();
+    });
+
+    document.getElementById('downloadSelectedRows').addEventListener('click', () => {
+        let data = Array.from(table.rows({search: 'applied'}).data());
+        saveFileAsJson('Filtered.json', data);
+    });
 });
 
