@@ -461,8 +461,8 @@ class Schedule():
                                 print(f'Done Calander {calander["Calander Name"]} in {calander["Processing Time"]}')
                         except Exception as e: logger.exception(f'Getting Courses | {type(e)} | {e}\nCalander: {calander}')
                 except Exception as e: logger.exception(f'Getting Mappings | {type(e)} | {e}\nCalander: {calander}')
+            #with open('table.json', 'w', encoding='UTF-8') as f: f.write(dumps(calanders, indent=4))
             return calanders
-            # with open('table.json', 'w', encoding='UTF-8') as f: f.write(dumps(calanders, indent=4))
 
     async def _visit_uris(self, second_headers: dict) -> None:
         logger = logging.getLogger('_visit_uris')
@@ -533,7 +533,6 @@ def handle_courses():
     if type(calanders) is not list: return jsonify({'Error': 'Content sent was not JSON.'})
     elif not is_valid_request(calanders): return jsonify({'Error': 'Missing required keys.'})
     else: return jsonify(schedule.get_courses(calanders = calanders))
-
 
 schedule = Schedule()
 app.run(host='0.0.0.0', debug=True, port=8080)
