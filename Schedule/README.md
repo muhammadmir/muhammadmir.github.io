@@ -18,7 +18,7 @@ I didn't like the way the Calander was set up. I thought the interface was unapp
 ## How It Works
 I scraped and parsed information about courses available from one Calander and re-represented the course by developing a structure that encapsulated their properties like name, level, credits, instructors, times, etc. After doing this for one Calander, I made the entire process dynamic for the entire Dynamic Schedule. Currently, you are able to view a better interface for one Calander at a time, but can download the JSON data for any number of calanders.
 
-It's important to know there are two version of the Dynamic Schedule, and I chose the public version to gather my information from. The other version required a valid Drew login. The main difference between these two versions--in the context of this project--is that the public version requires you visit an extra URI for *each* course to get information about the course's capacity, remaining slots, etc. Regardless of which version you use, they both have essentially the same interface and both query for the same information.
+It's important to know there are two versiosn of the Dynamic Schedule, and I chose the public version to gather my information from. The other version required a valid Drew login. The main difference between these two versions--in the context of this project--is that the public version requires you visit an extra URI for *each* course to get information about the course's capacity, remaining slots, etc. Regardless of which version you use, they both have essentially the same interface and both query for the same information.
 
 ---
 
@@ -31,7 +31,7 @@ To see a live version, click [here](https://muhammadmir.github.io/Schedule/).
 There are two main benefits:
 
 ### Searching and Filtering
-The regular interface is limited. You can make a query with multiple filters. For example, you can select multiple subjects, instructors, and attributes. However, the logic is **OR**, not **AND**. So, if you wanted to know which two or more attributes are applied to the same course, you cannot know without tedious searching. Additionally, as you select properties, the unavaialable properties do not collapse. You must submit the query and then it will tell you whether or not courses with those condition exist, and if they don't, you have to go back the page, reload it, and re-select. Furthemore, you have to click on an extra link just to get information like the course description or pre-requsities. And, depending on the Dynamic Schedule, there is another link to visit just to see how many people have registered or waitlisted.
+The regular interface is limited. You can make a query with multiple filters. For example, you can select multiple subjects, instructors, and attributes. However, the logic is **OR**, not **AND**. So, if you wanted to know which two or more attributes are applied to the same course, you cannot know without tedious searching. Additionally, as you select properties, the unavailable properties do not collapse. You must submit the query and then it will tell you whether or not courses with those condition exist, and if they don't, you have to go back the page, reload it, and re-select. Furthemore, you have to click on an extra link just to get information like the course description or pre-requsities. And, depending on the Dynamic Schedule, there is another link to visit just to see how many people have registered or waitlisted.
 
 Along with some additional tweaks, I refined the way to view course properties so it is more useful.
 
@@ -51,4 +51,4 @@ To replicate and host yourself:
 ---
 
 ## Todo List
-1. Front-end updates
+1. Make front-end pretty
