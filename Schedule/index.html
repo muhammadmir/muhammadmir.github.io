@@ -4,7 +4,7 @@
 <head>
     <meta charset='UTF-8'>
     <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-    <title>Select Calander</title>
+    <title>Select Calendar</title>
 
     <script src='multiselect-dropdown.js'></script>
 
@@ -22,8 +22,8 @@
 </style>
 
 <body>
-    <h1>Please Select Calander(s)</h1>
-    <label>Calander(s): </label>
+    <h1>Please Select Calendar(s)</h1>
+    <label>Calendar(s): </label>
 
     <select name='field1' id='field1' multiple multiselect-search='true' multiselect-select-all='true'
         multiselect-max-items='100' multiselect-hide-x='false'>
@@ -56,12 +56,12 @@
     };
 
     function formatOptions(options) {
-        let calanders = []
-        Array.from(options).forEach(function (calander) {
-            calanders.push(
+        let calendars = []
+        Array.from(options).forEach(function (calendar) {
+            calendars.push(
                 {
-                    'Calander ID': calander.value,
-                    'Calander Name': calander.text,
+                    'Calendar ID': calendar.value,
+                    'Calendar Name': calendar.text,
                     'Processing Time': 0,
                     'Courses': []
                 }
@@ -69,7 +69,7 @@
         }
         );
 
-        return JSON.stringify(calanders);
+        return JSON.stringify(calendars);
     }
 
     function get_courses() {
@@ -107,7 +107,7 @@
     document.getElementById('viewCoursesButton').addEventListener('click', () => {
         sessionStorage.removeItem('Courses');
 
-        if (field1.selectedOptions.length != 1) alert('At this moment, you may only select one calander to view the course information.');
+        if (field1.selectedOptions.length != 1) alert('At this moment, you may only select one calendar to view the course information.');
         else {
             document.getElementById('viewCoursesButton').textContent = 'Fetching courses...';
 
@@ -118,8 +118,8 @@
         }
     });
 
-    fetch('https://courses-server.muhammadmir1.repl.co/get_calanders').then(obj => obj.json()).then(obj => {
-        field1.innerHTML = obj.map(x => '<option value=' + x['Calander ID'] + '>' + x['Calander Name'] + '</option>');
+    fetch('https://courses-server.muhammadmir1.repl.co/get_calendars').then(obj => obj.json()).then(obj => {
+        field1.innerHTML = obj.map(x => '<option value=' + x['Calendar ID'] + '>' + x['Calendar Name'] + '</option>');
         field1.loadOptions();
     });
 </script>

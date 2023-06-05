@@ -367,7 +367,7 @@ $(document).ready(function () {
         }
     });
 
-    document.getElementById('calanderName').textContent = 'Calander: ' + JSON.parse(sessionStorage['Courses'])[0]['Calander Name'];
+    document.getElementById('calendarName').textContent = 'Calendar: ' + JSON.parse(sessionStorage['Courses'])[0]['Calendar Name'];
 
     document.getElementById('paneLogic').addEventListener('click', () => {
         sessionStorage['Pane Logic'] = sessionStorage['Pane Logic'] == 'OR' ? 'AND' : 'OR';

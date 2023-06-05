@@ -4,19 +4,19 @@ An easier way to search and filter courses by various properties.
 ---
 
 ## Definitions
-**Dynamic Schedule** - A place where you can select a Calander and view courses offered in that Calander. The public one can be found [here](https://selfservice.drew.edu/prod/bwckschd.p_disp_dyn_sched). The various versions can be found at the [Registrar's webpage](https://drew.edu/registrars-office/about-us/catalogs-class-schedule/).
+**Dynamic Schedule** - A place where you can select a Calendar and view courses offered in that Calendar. The public one can be found [here](https://selfservice.drew.edu/prod/bwckschd.p_disp_dyn_sched). The various versions can be found at the [Registrar's webpage](https://drew.edu/registrars-office/about-us/catalogs-class-schedule/).
 
-**Calander** - Refers to a semester and year where courses are offered, such as "Fall 2023." Every Calander has an "interface" where you could view courses based on a query.
+**Calendar** - Refers to a semester and year where courses are offered, such as "Fall 2023." Every Calendar has an "interface" where you could view courses based on a query.
 
 ---
 
 ## About
-I didn't like the way the Calander was set up. I thought the interface was unappealing, unintuitive, and limited. I wanted to find courses that fulfilled a specific set of requirements, and doing so with the current features made it very tedious and difficult. Because I grew tired of this and knew the solution was simple, I started this project so I could make my life easier.
+I didn't like the way the Calendar was set up. I thought the interface was unappealing, unintuitive, and limited. I wanted to find courses that fulfilled a specific set of requirements, and doing so with the current features made it very tedious and difficult. Because I grew tired of this and knew the solution was simple, I started this project so I could make my life easier.
 
 ---
 
 ## How It Works
-I scraped and parsed information about courses available from one Calander and re-represented the course by developing a structure that encapsulated their properties like name, level, credits, instructors, times, etc. After doing this for one Calander, I made the entire process dynamic for the entire Dynamic Schedule. Currently, you are able to view a better interface for one Calander at a time, but can download the JSON data for any number of calanders.
+I scraped and parsed information about courses available from one Calendar and re-represented the course by developing a structure that encapsulated their properties like name, level, credits, instructors, times, etc. After doing this for one Calendar, I made the entire process dynamic for the entire Dynamic Schedule. Currently, you are able to view a better interface for one Calendar at a time, but can download the JSON data for any number of Calendars.
 
 It's important to know there are two versiosn of the Dynamic Schedule, and I chose the public version to gather my information from. The other version required a valid Drew login. The main difference between these two versions--in the context of this project--is that the public version requires you visit an extra URI for *each* course to get information about the course's capacity, remaining slots, etc. Regardless of which version you use, they both have essentially the same interface and both query for the same information.
 
@@ -36,9 +36,9 @@ The regular interface is limited. You can make a query with multiple filters. Fo
 Along with some additional tweaks, I refined the way to view course properties so it is more useful.
 
 ### Data Analysis
-While Registrar does not make certain information public like how many students does an instructor have for a given semester, or the number of courses with a certain attribute, this data is all publicly available because the calander is publicly available. The information is there, but it is not represented in a friendly manner.
+While Registrar does not make certain information public like how many students does an instructor have for a given semester, or the number of courses with a certain attribute, this data is all publicly available because the Calendar is publicly available. The information is there, but it is not represented in a friendly manner.
 
-Because my initial goal of the project, parsing the data neatly and effectively was a pre-requisite. By doing this, I elminated the need of someone developing a parser for this. They can instead just vist the live version of this project and download the data for the calander(s) they want and easily perform analyses.
+Because my initial goal of the project, parsing the data neatly and effectively was a pre-requisite. By doing this, I elminated the need of someone developing a parser for this. They can instead just vist the live version of this project and download the data for the Calendar(s) they want and easily perform analyses.
 
 ---
 

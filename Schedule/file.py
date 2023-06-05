@@ -369,8 +369,8 @@ class Schedule():
                     stuff['Restrictions'] = new_items
         return stuff           
     
-    def get_calanders(self, all_calanders: bool = False) -> list[dict]:
-        logger = logging.getLogger('get_calanders')
+    def get_calendars(self, all_calendars: bool = False) -> list[dict]:
+        logger = logging.getLogger('get_calendars')
         with Client(base_url='https://selfservice.drew.edu', verify=False, timeout=60) as session:
             try:
                 first_headers = {
@@ -382,20 +382,20 @@ class Schedule():
                 first_response = session.get('/prod/bwckschd.p_disp_dyn_sched', headers=first_headers)
                 if '>Dynamic Schedule<' in first_response.text:
                     
-                    calanders = []
+                    calendars = []
                     cal_ids = findall(r'(?<=OPTION VALUE=")(\d\d.*?)(?=")', first_response.text)
                     cal_names = findall(r'(?<=\d\d"\>)(.*?)(?=\<)', first_response.text)
-                    for cal_id, cal_name in zip(cal_ids, cal_names): calanders.append({'Calander ID': cal_id, 'Calander Name': cal_name.replace(' (View only)', ''), 'Processing Time': 0, 'Courses': []})
+                    for cal_id, cal_name in zip(cal_ids, cal_names): calendars.append({'Calendar ID': cal_id, 'Calendar Name': cal_name.replace(' (View only)', ''), 'Processing Time': 0, 'Courses': []})
 
-                    if not all_calanders: calanders = [calanders[0]]
+                    if not all_calendars: calendars = [calendars[0]]
                     
-                    return calanders
+                    return calendars
             except Exception as e: logger.exception(f'{type(e)} | {e}')
     
-    def get_courses(self, calanders: list[dict]) -> list[dict]:
+    def get_courses(self, calendars: list[dict]) -> list[dict]:
         logger = logging.getLogger('get_courses')
         with Client(base_url='https://selfservice.drew.edu', verify=False, timeout=60) as session:
-            for calander in calanders:
+            for calendar in calendars:
                 start_time = time()
                 
                 try:
@@ -408,7 +408,7 @@ class Schedule():
                         'Referer': 'https://selfservice.drew.edu/prod/bwckschd.p_disp_dyn_sched',
                         'Accept-Language': 'en-US,en;q=0.9'
                         }
-                    first_data = {'p_calling_proc': 'bwckschd.p_disp_dyn_sched', 'p_term': calander['Calander ID'], 'p_by_date': 'Y', 'p_from_date': '', 'p_to_date': ''}
+                    first_data = {'p_calling_proc': 'bwckschd.p_disp_dyn_sched', 'p_term': calendar['Calendar ID'], 'p_by_date': 'Y', 'p_from_date': '', 'p_to_date': ''}
                     first_response = session.post('/prod/bwckgens.p_proc_term_date', headers=first_headers, data=first_data)
                     if '>Class Schedule Search</' in first_response.text:
                         source = first_response.text.strip().replace('\n', '')
@@ -454,15 +454,15 @@ class Schedule():
                                     
                                     course['Description'] = desc                                            
                                 
-                                calander['Processing Time'] = round(time() - start_time)
-                                calander['Courses'] = courses  
+                                calendar['Processing Time'] = round(time() - start_time)
+                                calendar['Courses'] = courses  
                                 self._reset_uris()
                                 
-                                print(f'Done Calander {calander["Calander Name"]} in {calander["Processing Time"]}')
-                        except Exception as e: logger.exception(f'Getting Courses | {type(e)} | {e}\nCalander: {calander}')
-                except Exception as e: logger.exception(f'Getting Mappings | {type(e)} | {e}\nCalander: {calander}')
-            #with open('table.json', 'w', encoding='UTF-8') as f: f.write(dumps(calanders, indent=4))
-            return calanders
+                                print(f'Done Calendar {calendar["Calendar Name"]} in {calendar["Processing Time"]}')
+                        except Exception as e: logger.exception(f'Getting Courses | {type(e)} | {e}\nCalendar: {calendar}')
+                except Exception as e: logger.exception(f'Getting Mappings | {type(e)} | {e}\nCalendar: {calendar}')
+            #with open('table.json', 'w', encoding='UTF-8') as f: f.write(dumps(calendars, indent=4))
+            return calendars
 
     async def _visit_uris(self, second_headers: dict) -> None:
         logger = logging.getLogger('_visit_uris')
@@ -510,29 +510,29 @@ class Schedule():
         stuff = {'Prerequisites': None, 'Corequisites': None, 'Mutual Exclusions': None, 'Cross List Courses': None, 'Restrictions': None}
         return {'Capacity': 0, 'Registered': 0, 'Remaining': 0, 'Waitlisted': 0, 'Stuff': stuff}
 
-def is_valid_request(calanders: list):
-    required_keys = ['Calander ID', 'Calander Name', 'Processing Time', 'Courses']
+def is_valid_request(calendars: list):
+    required_keys = ['Calendar ID', 'Calendar Name', 'Processing Time', 'Courses']
     valid_request = True
-    for calander in calanders:
-        if type(calander) is not dict: valid_request = False
-        elif not all([True if calander_key in required_keys else False for calander_key in calander.keys()]): valid_request = False
+    for calendar in calendars:
+        if type(calendar) is not dict: valid_request = False
+        elif not all([True if calendar_key in required_keys else False for calendar_key in calendar.keys()]): valid_request = False
     
     return valid_request        
 
-@app.route('/get_calanders', methods=['GET'])
+@app.route('/get_calendars', methods=['GET'])
 #@cache.cached(timeout = 60 * 10)
-def handle_calander():
-    calanders = schedule.get_calanders(all_calanders = True)
-    return jsonify(calanders)
+def handle_calendar():
+    calendars = schedule.get_calendars(all_calendars = True)
+    return jsonify(calendars)
 
 @app.route('/get_courses', methods=['POST'])
 #@cache.cached(timeout=60 * 10)
 def handle_courses():
-    calanders = request.get_json()
+    calendars = request.get_json()
     
-    if type(calanders) is not list: return jsonify({'Error': 'Content sent was not JSON.'})
-    elif not is_valid_request(calanders): return jsonify({'Error': 'Missing required keys.'})
-    else: return jsonify(schedule.get_courses(calanders = calanders))
+    if type(calendars) is not list: return jsonify({'Error': 'Content sent was not JSON.'})
+    elif not is_valid_request(calendars): return jsonify({'Error': 'Missing required keys.'})
+    else: return jsonify(schedule.get_courses(calendars = calendars))
 
 schedule = Schedule()
 app.run(host='0.0.0.0', debug=True, port=8080)
