@@ -23,7 +23,7 @@ It's important to know there are two versiosn of the Dynamic Schedule, and I cho
 ---
 
 ## Usage
-To see a live version, click [here](https://muhammadmir.github.io/Schedule/).
+To see a live version, click [here](https://muhammadmir.github.io/Schedule/). Please note results are NOT cached.
 
 ---
 
