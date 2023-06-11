@@ -52,3 +52,5 @@ To replicate and host yourself:
 
 ## Todo List
 1. Make front-end pretty
+2. Check why Full option in Capacity plane isn't working correctly
+2. Check why Summer 2023 is not displaying all 10 panes
