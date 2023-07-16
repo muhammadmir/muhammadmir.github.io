@@ -125,6 +125,7 @@ function createTable() {
         dom: 'Pfrtip',
         searchPanes: {
             cascadePanes: true,
+            threshold: 1.0,
         },
         columnDefs: [
             {
@@ -135,7 +136,7 @@ function createTable() {
                 searchPanes: {
                     show: false
                 },
-                targets: [2, 4, 6, 6, 7, 8, 10, 11, 12]
+                targets: [1, 2, 4, 6, 6, 7, 8, 10, 11, 12]
             },
             {
                 searchPanes: {
@@ -144,7 +145,6 @@ function createTable() {
                 },
                 targets: [3, 18, 19, 20, 21, 22, 23, 24]
             },
-            
             { // Filter by course level
                 searchPanes: {
                     options: [
@@ -193,7 +193,7 @@ function createTable() {
                         {
                             label: 'Full',
                             value: function (rowData, rowIdx) {
-                                return rowData.Remaining <= 0
+                                return rowData.Remaining <= 0 && rowData.Waitlisted <= 0
                             }
                         },
                         {
