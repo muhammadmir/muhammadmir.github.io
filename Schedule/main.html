@@ -16,9 +16,43 @@
 
 <body>
     <h2 id="calendarName" class="title"></h2>
+
+    <div class="content">
+        <h3>How do I use this?</h3>
+        <p>Much of the functionality is intuitive. Here are some basic things to know:</p>
+        <ul>
+            <li>Each row in the table has a button to the left that reveals more information about the course such as meeting time(s).</li>
+            <li>You can search for any term or word that appears anywhere in the table using the search bar that is above the table.</li>
+            <li>Navigating the table and seeing the total number of (filtered) results can be done by scrolling to the bottom of the table.</li>
+            <li>There are panes that let you filter by certain components. More on that later.</li>
+            <li>Any searching or filtering action will only present all other possible options that meet that searched/filtered action.</li>
+        </ul>
+
+        <h3>Can you tell me more about the panes?</h3>
+        <p>
+            The panes are a great way to filter entries in the table. You can select multiple options within one pane (⌘ + click on Mac, CTRL + click on Windows).
+            The <b>intra-pane logic is OR</b>, meaning if you selected "Anthropology" and "Chemistry" in the Subject pane, you will see courses that are in those subjects.
+            If you selected two Breadth requirements in the Attribute pane, you will see courses that either have at least one course of the Breadth attributes. Note
+            that options within the selected pane will not collapse, but all other pane options will.
+        </p>
+        <p>
+            When choosing options across several panes, the <b>inter-pane logic by default is OR</b>. However, it may be useful to have this be AND instead. The "Inter-Pane Logic"
+            button below shows the current configuration. If the button says "OR", then clicking on the button will refresh the page and change the logic to AND. Likewise,
+            clicking on the button when it says "AND" will refresh the page and change the logic back to OR. Note that intra-pane logic will always remain OR.
+        </p>
+
+        <h3>What is the download option?</h3>
+        <p>
+            For those who are interested, you can download all the currently filtered courses as a JSON file that the website parses and displays. The total number of objects
+            in the array of the JSON file is the same as the total number of (filtered) entries as designated at the bottom of the table.
+        </p>
+    </div>
+
     <p class="subtitle">If you have feedback or suggestions, please send me an email at mmir@drew.edu or make a pull request.</p>
 
+    <p class="">Selecting multiple options (command + click on Mac, control + click on Windows) within a </p>
     <button id="paneLogic" class="button"></button>
+    <br>
     <button id="downloadSelectedRows" class="button">Download Filtered Results</button>
 
 

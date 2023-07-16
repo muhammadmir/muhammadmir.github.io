@@ -133,18 +133,19 @@ function createTable() {
             },
             {
                 searchPanes: {
-                    show: true,
-                    combiner: sessionStorage['Pane Logic'].toLowerCase()
-                },
-                targets: [3, 18, 19, 20, 21, 22, 23, 24]
-            },
-            {
-                searchPanes: {
                     show: false
                 },
                 targets: [2, 4, 6, 6, 7, 8, 10, 11, 12]
             },
             {
+                searchPanes: {
+                    show: true,
+                    combiner: sessionStorage['Pane Logic'].toLowerCase()
+                },
+                targets: [3, 18, 19, 20, 21, 22, 23, 24]
+            },
+            
+            { // Filter by course level
                 searchPanes: {
                     options: [
                         {
@@ -180,19 +181,19 @@ function createTable() {
                 },
                 targets: [5]
             },
-            {
+            { // Filter by capacity: Available, Full, Waitlisted
                 searchPanes: {
                     options: [
                         {
                             label: 'Available',
                             value: function (rowData, rowIdx) {
-                                return rowData.Registered < rowData.Remaining
+                                return rowData.Remaining > 0
                             }
                         },
                         {
                             label: 'Full',
                             value: function (rowData, rowIdx) {
-                                return rowData.Registered >= rowData.Remaining
+                                return rowData.Registered + rowData.Remaining >= rowData.Capacity
                             }
                         },
                         {
@@ -373,7 +374,7 @@ $(document).ready(function () {
         sessionStorage['Pane Logic'] = sessionStorage['Pane Logic'] == 'OR' ? 'AND' : 'OR';
         console.log(sessionStorage['Pane Logic']);
 
-        document.getElementById('paneLogic').textContent = 'Logic: ' + sessionStorage['Pane Logic'];
+        document.getElementById('paneLogic').textContent = 'Inter-Pane Logic: ' + sessionStorage['Pane Logic'];
         location.reload();
     });
 
