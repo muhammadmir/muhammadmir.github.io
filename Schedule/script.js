@@ -193,7 +193,7 @@ function createTable() {
                         {
                             label: 'Full',
                             value: function (rowData, rowIdx) {
-                                return rowData.Registered + rowData.Remaining >= rowData.Capacity
+                                return rowData.Remaining < 0
                             }
                         },
                         {
