@@ -51,5 +51,5 @@ To replicate and host yourself:
 ---
 
 ## Todo List
-1. Make front-end pretty
+1. Make front-end pretty (Halfway done? 7/28)
 2. Check why Summer 2023 is not displaying all 10 panes

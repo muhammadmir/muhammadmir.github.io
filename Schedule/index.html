@@ -13,26 +13,37 @@
     <link rel='stylesheet' type='text/css'
         href='https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/css/bootstrap.min.css'>
 
+    <link rel="stylesheet" type="text/css" href="./index.css">
 </head>
 
 <style>
     select {
-        width: 20em;
+        width: 350px;
     }
 </style>
 
 <body>
-    <h1>Please Select Calendar(s)</h1>
-    <label>Calendar(s): </label>
+    <div class="container">
+        <div class="label" style="font-weight: bolder;">
+            <h4>Please Select Calendar(s)</h4>
+        </div>
 
-    <select name='field1' id='field1' multiple multiselect-search='true' multiselect-select-all='true'
-        multiselect-max-items='100' multiselect-hide-x='false'>
-    </select>
+        <div class="container-body">
+            <div class="dropdown">
+                <select name='field1' id='field1' multiple multiselect-search='true' multiselect-select-all='true'
+                    multiselect-max-items='100' multiselect-hide-x='false'>
+                </select>
+            </div>
 
-    <br><br>
 
-    <button id='viewCoursesButton' class="btn btn-light" action>View Courses</button>
-    <button id='downloadCoursesButton' class="btn btn-light" action>Download Courses</button>
+            <br><br>
+
+            <div class="buttons">
+                <button id='viewCoursesButton' class="btn" action>View Courses</button>
+                <button id='downloadCoursesButton' class="btn" action>Download Courses</button>
+            </div>
+        </div>
+    </div>
 </body>
 
 <script>
@@ -95,7 +106,7 @@
             }
         });
     }
-    
+
     document.getElementById('downloadCoursesButton').addEventListener('click', () => {
         document.getElementById('downloadCoursesButton').textContent = 'Downloading courses...';
 
