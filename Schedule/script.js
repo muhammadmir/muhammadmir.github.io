@@ -1,10 +1,15 @@
 function formatProp(properties) {
     str = ''
     for (var i = 0; i < properties.length; i++) {
-        str += '<tr>'
-        str += '<td style="background-color: #f2f2f2; text-align: center; font-weight:bold" colspan="7">Schedule Meeting Times #' + (i + 1).toString() + '</td>'
-        str += '</tr>'
+        str += '<table class="format-properties-table">'
 
+        str += '<thead class="meeting-time">'
+        str += '<tr>'
+        str += '<td colspan=7 style="text-align: center;">Schedule Meeting Times #' + (i + 1).toString() + '</td>'
+        str += '</tr>'
+        str += '</thead>'
+
+        str += '<thead class="meeting-properties-head">'
         str += '<tr>'
         str += '<td style="font-weight:bold">Type</td>'
         str += '<td style="font-weight:bold">Nature</td>'
@@ -14,7 +19,10 @@ function formatProp(properties) {
         str += '<td style="font-weight:bold">Period</td>'
         str += '<td style="font-weight:bold">Instructors</td>'
         str += '</tr>'
+        str += '</thead>'
 
+
+        str += '<tbody class="meeting-properties-body">'
         str += '<td>' + properties[i].Type.Name + '</td>'
         str += '<td>' + properties[i].Nature.Name + '</td>'
         str += '<td>' + properties[i].Time.Name + '</td>'
@@ -23,6 +31,9 @@ function formatProp(properties) {
         str += '<td>' + properties[i].Period.Name + '</td>'
         str += '<td>' + properties[i].Instructors.map(instr => instr.Name).join(', ') + '</td>'
         str += '</tr>'
+        str += '</tbody>'
+
+        str += '</table>'
     }
     return str
 }
@@ -86,7 +97,7 @@ function formatRestrictions(restrictions) {
 /* Formatting function for row details - modify as you need */
 function format(course) {
     return (
-        '<table width=100%>' +
+        '<table class="format-table">' +
         formatCRN(course.CRN) +
         formatDesc(course.Description) +
         formatPreReq(course.Prerequisites) +
