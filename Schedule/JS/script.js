@@ -357,6 +357,16 @@ function createTable() {
     });
 }
 
+function detectDevice() {
+    const platform = navigator.platform.toLowerCase();
+    const isMac = platform.includes('mac');
+    const isWindows = platform.includes('win');
+
+    if (isMac) return "Mac"
+    if (isWindows) return "Windows"
+    return "Neither"
+}
+
 sessionStorage['Pane Logic'] = sessionStorage['Pane Logic'] == undefined ? 'OR' : sessionStorage['Pane Logic'];
 
 $(document).ready(function () {
@@ -380,6 +390,14 @@ $(document).ready(function () {
     });
 
     document.getElementById('calendarName').textContent = 'Calendar: ' + JSON.parse(sessionStorage['Courses'])[0]['Calendar Name'];
+
+    let device = detectDevice();
+    let keyboardTipPrefix = 'Tip: To select multiple Options in one or more Search Panes, press ';
+
+    keyboardTipPrefix += device == 'Mac' ? '<kbd>⌘</kbd> + Click' :  '<kbd>Ctrl</kbd> + Click';
+    keyboardTipPrefix = device == 'Neither' ? 'Tip: View this page on a computer!' : keyboardTipPrefix;
+
+    document.getElementById('keyboardTip').innerHTML = keyboardTipPrefix
 
     document.getElementById('paneLogic').addEventListener('click', () => {
         sessionStorage['Pane Logic'] = sessionStorage['Pane Logic'] == 'OR' ? 'AND' : 'OR';

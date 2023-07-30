@@ -27,8 +27,8 @@ style.innerHTML = `
 }
 .multiselect-dropdown span.optext .optdel {
   float: right;
-  margin: 0 -6px 1px 5px;
-  font-size: 0.7em;
+  margin: -1px -3px 1px 5px;
+  font-size: 1em;
   margin-top: 2px;
   cursor: pointer;
   color: #666;
@@ -90,11 +90,11 @@ function MultiselectDropdown(options){
   var config={
     search:true,
     height:'15rem',
-    placeholder:'select',
-    txtSelected:'selected',
-    txtAll:'All',
+    placeholder: 'Select Calendar(s)',
+    txtSelected: 'selected',
+    txtAll: 'All',
     txtRemove: 'Remove',
-    txtSearch:'search',
+    txtSearch: 'Search for Calendar(s)',
     ...options
   };
   function newEl(tag,attrs){
@@ -187,7 +187,7 @@ function MultiselectDropdown(options){
           sels.map(x=>{
             var c=newEl('span',{class:'optext',text:x.text, srcOption: x});
             if((el.attributes['multiselect-hide-x']?.value !== 'true'))
-              c.appendChild(newEl('span',{class:'optdel',text:'🗙',title:config.txtRemove, onclick:(ev)=>{c.srcOption.listitemEl.dispatchEvent(new Event('click'));div.refresh();ev.stopPropagation();}}));
+              c.appendChild(newEl('span',{class:'optdel',text:'☒', title:config.txtRemove, onclick:(ev)=>{c.srcOption.listitemEl.dispatchEvent(new Event('click'));div.refresh();ev.stopPropagation();}}));
 
             div.appendChild(c);
           });

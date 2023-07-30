@@ -5,7 +5,7 @@ library(tidyr)
 library(ggplot2)
 library(treemapify)
 
-data <- fromJSON("../table.json") %>%
+data <- fromJSON("./table.json") %>%
     as.data.frame() %>%
     unnest(cols = c(Courses), names_sep = ".")
 

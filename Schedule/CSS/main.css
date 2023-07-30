@@ -1,56 +1,61 @@
 @import "https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@300;400;500&display=swap";
 
-select {
-    width: 350px
-}
-
 html,
 body {
-    color: #fff;
-    display: flex;
+    color: #000;
     font-family: 'Roboto Slab', serif;
     height: 100%;
-    justify-content: center;
     margin: 0
 }
 
-.container {
-    background-image: radial-gradient(100% 100% at 100% 0, #5adaff 0, #b1bdff 100%);
-    border-radius: 50px;
-    box-shadow: 0 0 20px rgba(138, 187, 243, 0.7);
-    height: 400px;
-    left: 50%;
-    position: absolute;
-    text-align: center;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    width: 400px
+.title {
+    color: #577eff;
+    text-align: center
 }
 
-.label {
-    padding-top: 20px
+.format-table,
+.format-properties-table {
+    width: 100%
 }
 
-.dropdown {
-    color: #000;
-    height: 75px;
-    left: 50%;
-    position: absolute;
-    top: 30%;
-    transform: translate(-50%, -50%);
-    width: 400px;
-    z-index: 10
+.format-properties-table {
+    border-collapse: collapse
+}
+
+.meeting-time td {
+    background-image: radial-gradient(100% 100% at 100% 0, #5adaff 0, #5468ff 100%);
+    color: #fff;
+    font-weight: 700
+}
+
+table.dataTable thead:first-child {
+    background-attachment: fixed;
+    background-image: radial-gradient(100% 100% at 100% 0, #5adaff 0, #5468ff 100%);
+    color: #fff
+}
+
+tr.shown {
+    background-color: #f2f2f2 !important
+}
+
+a.btn {
+    -moz-appearance: button;
+    -webkit-appearance: button;
+    appearance: button;
+    color: #fff;
+    text-decoration: none
+}
+
+footer a {
+    color: #fff
 }
 
 .buttons {
-    height: 110px;
-    left: 50%;
-    position: absolute;
-    top: 80%;
-    transform: translate(-50%, -50%);
-    width: 250px
+    display: flex;
+    justify-content: space-evenly
 }
 
+button,
 .btn {
     -webkit-user-select: none;
     align-items: center;
@@ -83,16 +88,42 @@ body {
     will-change: box-shadow, transform
 }
 
+button:focus,
 .btn:focus {
     box-shadow: #3c4fe0 0 0 0 1.5px inset, rgba(45, 35, 66, .4) 0 2px 4px, rgba(45, 35, 66, .3) 0 7px 13px -3px, #3c4fe0 0 -3px 0 inset
 }
 
+button:hover,
 .btn:hover {
     box-shadow: rgba(45, 35, 66, .4) 0 4px 8px, rgba(45, 35, 66, .3) 0 7px 13px -3px, #3c4fe0 0 -3px 0 inset;
     transform: translateY(-2px)
 }
 
+button:active,
 .btn:active {
     box-shadow: #3c4fe0 0 3px 7px inset;
     transform: translateY(2px)
+}
+
+.keyboardTip {
+    color:black
+}
+
+kbd {
+	margin: 0px 0.1em;
+	padding: 0.5em 0.6em;
+	border-radius: 3px;
+	border: 1px solid rgb(204, 204, 204);
+	color: rgb(51, 51, 51);
+	line-height: 1.4;
+	font-family: Arial,Helvetica,sans-serif;
+	font-size: 10px;
+	display: inline-block;
+	box-shadow: 0px 1px 0px rgba(0,0,0,0.2), inset 0px 0px 0px 2px #ffffff;
+	background-color: rgb(247, 247, 247);
+	-moz-box-shadow: 0 1px 0px rgba(0, 0, 0, 0.2), 0 0 0 2px #ffffff inset;
+	-webkit-box-shadow: 0 1px 0px rgba(0, 0, 0, 0.2), 0 0 0 2px #ffffff inset;
+	-moz-border-radius: 3px;
+	-webkit-border-radius: 3px;
+	text-shadow: 0 1px 0 #fff;
 }
