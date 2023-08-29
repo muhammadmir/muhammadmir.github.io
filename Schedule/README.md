@@ -90,7 +90,7 @@ While Registrar does not make certain information public like how many students 
 To replicate and host yourself:
 1. Make a copy of `Schedule` folder
 2. Run `file.py` on a server
-3. Edit `index.html` with a link to the server
+3. Edit `SERVER` variable in `index.html` with your server link.
 
 ---
 
