@@ -535,4 +535,4 @@ def handle_courses():
     else: return jsonify(schedule.get_courses(calendars = calendars))
 
 schedule = Schedule()
-app.run(host='0.0.0.0', debug=True, port=8080)
+app.run(host='0.0.0.0', debug=True, port=8080, ssl_context=("cert.pem", "key.pem")) # SSL info needs to be generated.
