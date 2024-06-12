@@ -1,4 +1,4 @@
-# muhammadmir.github.io
+# [muhammadmir.github.io](https://muhammadmir.github.io)
 
 # Projects
 1. [Course Schedule Viewer](./Course-Schedule-Viewer/)
